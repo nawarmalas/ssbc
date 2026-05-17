@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@600;700&family=Noto+Kufi+Arabic:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        @apply bg-white text-ssbc-dark font-body antialiased;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-display;
+    }
+    a {
+        @apply transition-colors;
+    }
+    /* Squared inputs by default — no rounded corners on form controls */
+    input[type='text'],
+    input[type='email'],
+    input[type='url'],
+    input[type='tel'],
+    input[type='date'],
+    input[type='number'],
+    input[type='password'],
+    input[type='file'],
+    select,
+    textarea {
+        @apply rounded-none;
+    }
+}
+
+@layer components {
+    .ssbc-container {
+        @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+    }
+
+    .ssbc-rule {
+        @apply w-12 h-px bg-ssbc-gold mb-6;
+    }
+
+    .ssbc-rule-full {
+        @apply w-full h-px bg-ssbc-gold/30;
+    }
+
+    .ssbc-eyebrow {
+        @apply text-xs uppercase tracking-[0.2em] text-ssbc-gold font-semibold;
+    }
+
+    .ssbc-btn {
+        @apply inline-flex items-center justify-center px-6 py-3 text-sm font-semibold uppercase tracking-wider transition-colors;
+    }
+
+    .ssbc-btn-primary {
+        @apply ssbc-btn bg-ssbc-gold text-ssbc-green hover:bg-ssbc-gold/90;
+    }
+
+    .ssbc-btn-outline {
+        @apply ssbc-btn border border-ssbc-gold text-ssbc-gold hover:bg-ssbc-gold hover:text-ssbc-green;
+    }
+
+    .ssbc-btn-outline-dark {
+        @apply ssbc-btn border border-ssbc-green text-ssbc-green hover:bg-ssbc-green hover:text-white;
+    }
+
+    .ssbc-input {
+        @apply block w-full border border-ssbc-green/20 bg-white px-3 py-2 text-ssbc-dark placeholder-ssbc-sage/70 focus:border-ssbc-gold focus:ring-0;
+    }
+
+    .ssbc-label {
+        @apply block text-xs uppercase tracking-wider text-ssbc-green/70 mb-1.5 font-semibold;
+    }
+
+    .ssbc-card {
+        @apply border border-ssbc-green/10 bg-white p-6;
+    }
+
+    .ssbc-pillar-card {
+        @apply border-t-2 border-ssbc-gold pt-6 px-1;
+    }
+
+    .ssbc-value-card {
+        @apply border-t border-ssbc-gold pt-4;
+    }
+
+    .ssbc-link-gold {
+        @apply text-ssbc-gold hover:text-ssbc-gold/80 font-semibold;
+    }
+
+    .ssbc-admin-card {
+        @apply border border-ssbc-green/15 bg-white;
+    }
+
+    .ssbc-status-badge {
+        @apply inline-flex items-center px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider border;
+    }
+
+    .ssbc-status-new {
+        @apply text-ssbc-gold border-ssbc-gold/40 bg-ssbc-gold/10;
+    }
+
+    .ssbc-status-reviewed {
+        @apply text-ssbc-sage border-ssbc-sage/40 bg-ssbc-sage/10;
+    }
+
+    .ssbc-status-contacted, .ssbc-status-approved, .ssbc-status-published {
+        @apply text-ssbc-green border-ssbc-green/40 bg-ssbc-green/10;
+    }
+
+    .ssbc-status-rejected {
+        @apply text-red-700 border-red-300 bg-red-50;
+    }
+
+    .ssbc-status-draft {
+        @apply text-ssbc-sage border-ssbc-sage/40 bg-ssbc-sage/10;
+    }
+}
