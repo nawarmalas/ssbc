@@ -6,6 +6,7 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Database\Seeders\FormSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -31,5 +32,7 @@ class DatabaseSeeder extends Seeder
                 'footer_desc_ar' => 'مجلس الأعمال السوري السعودي هو مؤسسة ثنائية رسمية مكرسة لبناء روابط اقتصادية دائمة بين مجتمعَي الأعمال السوري والسعودي.',
             ]);
         }
+
+        $this->call(FormSeeder::class);
     }
 }
