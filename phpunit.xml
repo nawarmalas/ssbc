@@ -10,7 +10,7 @@
     </testsuites>
     <php>
         <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="base64:test_key_32_chars_padded_here=="/>
+        <env name="APP_KEY" value="base64:3wJ2v15Ueb79TEWJH8yH3QxPA+5pgNuNX8IXuG4xmx4="/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="CACHE_STORE" value="array"/>
