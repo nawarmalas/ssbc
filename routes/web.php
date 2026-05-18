@@ -44,7 +44,7 @@ Route::prefix('{locale}')
         Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
 
         Route::get('/join', [JoinController::class, 'create'])->name('join.create');
-        Route::post('/join', [JoinController::class, 'store'])->name('join.store');
+        Route::post('/join', [JoinController::class, 'store'])->name('join.store')->middleware('throttle:5,1');
         Route::get('/join/thanks', [JoinController::class, 'thanks'])->name('join.thanks');
 
         Route::get('/contact', [ContactController::class, 'create'])->name('contact.create');
