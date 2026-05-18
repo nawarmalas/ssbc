@@ -62,4 +62,59 @@ class FormBuilderTest extends TestCase
 
         $this->assertCount(1, $form);
     }
+
+    public function test_admin_can_create_section(): void
+    {
+        $this->actingAsAdmin()->postJson('/admin/forms/join-us/sections', [
+            'title_en' => 'Test Section',
+            'title_ar' => 'قسم تجريبي',
+        ])->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('form_sections', ['title_en' => 'Test Section']);
+    }
+
+    public function test_admin_can_delete_section_with_fields_only_when_forced(): void
+    {
+        $section = FormSection::create([
+            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'ق', 'order_index' => 0,
+        ]);
+        FormField::create([
+            'section_id' => $section->id, 'label_en' => 'F', 'label_ar' => 'ف',
+            'field_type' => 'text', 'order_index' => 0,
+        ]);
+
+        $this->actingAsAdmin()
+            ->deleteJson("/admin/forms/join-us/sections/{$section->id}")
+            ->assertJson(['success' => false, 'has_fields' => true]);
+
+        $this->actingAsAdmin()
+            ->deleteJson("/admin/forms/join-us/sections/{$section->id}?force=1")
+            ->assertJson(['success' => true]);
+
+        $this->assertDatabaseMissing('form_sections', ['id' => $section->id]);
+    }
+
+    public function test_admin_can_create_and_delete_field(): void
+    {
+        $section = FormSection::create([
+            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'ق', 'order_index' => 0,
+        ]);
+
+        $response = $this->actingAsAdmin()->postJson('/admin/forms/join-us/fields', [
+            'section_id' => $section->id,
+            'label_en'   => 'Phone Number',
+            'label_ar'   => 'رقم الهاتف',
+            'field_type' => 'tel',
+            'is_required' => true,
+        ]);
+
+        $response->assertJson(['success' => true]);
+        $fieldId = $response->json('data.id');
+
+        $this->actingAsAdmin()
+            ->deleteJson("/admin/forms/join-us/fields/{$fieldId}")
+            ->assertJson(['success' => true]);
+
+        $this->assertDatabaseMissing('form_fields', ['id' => $fieldId]);
+    }
 }
