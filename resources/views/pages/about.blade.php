@@ -14,6 +14,14 @@
 {{-- Council Overview --}}
 <section class="bg-ssbc-beige">
     <div class="ssbc-container py-20">
+        <div class="flex justify-center mb-14">
+            <img
+                src="{{ asset('images/logos/logo-light.png') }}"
+                alt="{{ __('common.site_name') }}"
+                class="h-20 md:h-24 w-auto"
+                width="800" height="346"
+                loading="lazy">
+        </div>
         <div class="ssbc-rule"></div>
         <p class="ssbc-eyebrow mb-3">{{ __('home.overview.eyebrow') }}</p>
         <h2 class="text-3xl lg:text-4xl font-display font-bold text-ssbc-green max-w-3xl leading-tight">

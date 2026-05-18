@@ -70,30 +70,30 @@
                         <input type="hidden" :name="'_repeats[' + sectionId + ']'" :value="count">
                     </template>
 
-                    {{-- Current section --}}
-                    <template x-if="currentSection">
-                        <div>
+                    {{-- All sections kept in DOM via x-show so all inputs submit together --}}
+                    <template x-for="(section, sIdx) in sections" :key="section.id">
+                        <div x-show="step === sIdx">
                             <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2"
-                                x-text="locale === 'ar' ? currentSection.title_ar : currentSection.title_en"></h2>
+                                x-text="locale === 'ar' ? section.title_ar : section.title_en"></h2>
                             <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
 
                             {{-- Repeatable section tabs --}}
-                            <template x-if="currentSection.is_repeatable">
+                            <template x-if="section.is_repeatable">
                                 <div>
                                     <div class="flex gap-2 flex-wrap mb-6">
-                                        <template x-for="r in repeatCount" :key="r">
+                                        <template x-for="r in (repeats[section.id] || 1)" :key="r">
                                             <button type="button"
                                                     @click="activeRepeat = r - 1"
                                                     :class="activeRepeat === r - 1
                                                         ? 'bg-ssbc-gold text-ssbc-green border-ssbc-gold'
                                                         : 'bg-white text-ssbc-sage border-ssbc-green/20'"
                                                     class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors">
-                                                <span x-text="(locale === 'ar' ? currentSection.title_ar : currentSection.title_en) + ' ' + r"></span>
+                                                <span x-text="(locale === 'ar' ? section.title_ar : section.title_en) + ' ' + r"></span>
                                             </button>
                                         </template>
                                         <button type="button"
-                                                x-show="repeatCount < currentSection.max_repeats"
-                                                @click="addRepeat()"
+                                                x-show="(repeats[section.id] || 1) < section.max_repeats"
+                                                @click="addRepeat(section)"
                                                 class="px-4 py-1.5 rounded-full text-sm border border-dashed border-ssbc-gold text-ssbc-gold">
                                             + Add another
                                         </button>
@@ -101,163 +101,166 @@
                                 </div>
                             </template>
 
-                            {{-- Fields --}}
-                            <div class="space-y-6">
-                                <template x-for="field in currentSection.fields" :key="field.id">
-                                    <div>
-                                        {{-- Label --}}
-                                        <label class="ssbc-label" :for="'f_' + field.id + '_' + activeRepeat">
-                                            <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
-                                            <span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
-                                        </label>
+                            {{-- All repeats in DOM; x-show hides non-active repeat for repeatable sections --}}
+                            <template x-for="ri in (section.is_repeatable ? (repeats[section.id] || 1) : 1)" :key="ri">
+                                <div x-show="!section.is_repeatable || activeRepeat === ri - 1"
+                                     class="space-y-6">
+                                    <template x-for="field in section.fields" :key="field.id">
+                                        <div>
+                                            {{-- Label --}}
+                                            <label class="ssbc-label" :for="'f_' + field.id + '_' + (ri-1)">
+                                                <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
+                                                <span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
+                                            </label>
 
-                                        {{-- text / email / tel / number / url --}}
-                                        <template x-if="['text','email','tel','number','url'].includes(field.field_type)">
-                                            <input
-                                                :id="'f_' + field.id + '_' + activeRepeat"
-                                                :type="field.field_type"
-                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
-                                                :required="field.is_required && activeRepeat === 0"
-                                                x-model="answers[field.id + '_' + activeRepeat]"
-                                                class="ssbc-input"
-                                            >
-                                        </template>
+                                            {{-- text / email / tel / number / url --}}
+                                            <template x-if="['text','email','tel','number','url'].includes(field.field_type)">
+                                                <input
+                                                    :id="'f_' + field.id + '_' + (ri-1)"
+                                                    :type="field.field_type"
+                                                    :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                    :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
+                                                    :required="field.is_required && ri === 1"
+                                                    x-model="answers[field.id + '_' + (ri-1)]"
+                                                    class="ssbc-input"
+                                                >
+                                            </template>
 
-                                        {{-- textarea --}}
-                                        <template x-if="field.field_type === 'textarea'">
-                                            <textarea
-                                                :id="'f_' + field.id + '_' + activeRepeat"
-                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
-                                                :required="field.is_required && activeRepeat === 0"
-                                                x-model="answers[field.id + '_' + activeRepeat]"
-                                                rows="3"
-                                                class="ssbc-input"
-                                            ></textarea>
-                                        </template>
+                                            {{-- textarea --}}
+                                            <template x-if="field.field_type === 'textarea'">
+                                                <textarea
+                                                    :id="'f_' + field.id + '_' + (ri-1)"
+                                                    :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                    :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
+                                                    :required="field.is_required && ri === 1"
+                                                    x-model="answers[field.id + '_' + (ri-1)]"
+                                                    rows="3"
+                                                    class="ssbc-input"
+                                                ></textarea>
+                                            </template>
 
-                                        {{-- date --}}
-                                        <template x-if="field.field_type === 'date'">
-                                            <input
-                                                :id="'f_' + field.id + '_' + activeRepeat"
-                                                type="date"
-                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                :required="field.is_required && activeRepeat === 0"
-                                                x-model="answers[field.id + '_' + activeRepeat]"
-                                                class="ssbc-input"
-                                            >
-                                        </template>
+                                            {{-- date --}}
+                                            <template x-if="field.field_type === 'date'">
+                                                <input
+                                                    :id="'f_' + field.id + '_' + (ri-1)"
+                                                    type="date"
+                                                    :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                    :required="field.is_required && ri === 1"
+                                                    x-model="answers[field.id + '_' + (ri-1)]"
+                                                    class="ssbc-input"
+                                                >
+                                            </template>
 
-                                        {{-- select --}}
-                                        <template x-if="field.field_type === 'select'">
-                                            <select
-                                                :id="'f_' + field.id + '_' + activeRepeat"
-                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                :required="field.is_required && activeRepeat === 0"
-                                                x-model="answers[field.id + '_' + activeRepeat]"
-                                                class="ssbc-input"
-                                            >
-                                                <option value="">— Select —</option>
-                                                <template x-for="opt in (field.options || [])" :key="opt.value">
-                                                    <option :value="opt.value"
-                                                            x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></option>
-                                                </template>
-                                            </select>
-                                        </template>
-
-                                        {{-- radio --}}
-                                        <template x-if="field.field_type === 'radio'">
-                                            <div class="flex flex-wrap gap-4 mt-1">
-                                                <template x-for="opt in (field.options || [])" :key="opt.value">
-                                                    <label class="flex items-center gap-2 cursor-pointer text-sm">
-                                                        <input type="radio"
-                                                               :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                               :value="opt.value"
-                                                               x-model="answers[field.id + '_' + activeRepeat]"
-                                                               class="text-ssbc-gold focus:ring-ssbc-gold">
-                                                        <span x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></span>
-                                                    </label>
-                                                </template>
-                                            </div>
-                                        </template>
-
-                                        {{-- checkbox_group --}}
-                                        <template x-if="field.field_type === 'checkbox_group'">
-                                            <div>
-                                                <div class="grid sm:grid-cols-2 gap-2 mt-1">
+                                            {{-- select --}}
+                                            <template x-if="field.field_type === 'select'">
+                                                <select
+                                                    :id="'f_' + field.id + '_' + (ri-1)"
+                                                    :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                    :required="field.is_required && ri === 1"
+                                                    x-model="answers[field.id + '_' + (ri-1)]"
+                                                    class="ssbc-input"
+                                                >
+                                                    <option value="">— Select —</option>
                                                     <template x-for="opt in (field.options || [])" :key="opt.value">
-                                                        <label class="flex items-start gap-2 cursor-pointer text-sm p-2 hover:bg-ssbc-beige/40 rounded transition-colors">
-                                                            <input type="checkbox"
+                                                        <option :value="opt.value"
+                                                                x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></option>
+                                                    </template>
+                                                </select>
+                                            </template>
+
+                                            {{-- radio --}}
+                                            <template x-if="field.field_type === 'radio'">
+                                                <div class="flex flex-wrap gap-4 mt-1">
+                                                    <template x-for="opt in (field.options || [])" :key="opt.value">
+                                                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                                            <input type="radio"
+                                                                   :name="'answers[' + field.id + '][' + (ri-1) + ']'"
                                                                    :value="opt.value"
-                                                                   :checked="(checkboxAnswers[field.id + '_' + activeRepeat] || []).includes(opt.value)"
-                                                                   @change="toggleCheckbox(field.id, activeRepeat, opt.value)"
-                                                                   class="mt-0.5 shrink-0 text-ssbc-gold focus:ring-ssbc-gold">
+                                                                   x-model="answers[field.id + '_' + (ri-1)]"
+                                                                   class="text-ssbc-gold focus:ring-ssbc-gold">
                                                             <span x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></span>
                                                         </label>
                                                     </template>
                                                 </div>
-                                                {{-- Hidden serialized value --}}
-                                                <input type="hidden"
-                                                       :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                       :value="JSON.stringify(checkboxAnswers[field.id + '_' + activeRepeat] || [])">
-                                            </div>
-                                        </template>
+                                            </template>
 
-                                        {{-- file --}}
-                                        <template x-if="field.field_type === 'file'">
-                                            <div>
-                                                <div class="border-2 border-dashed border-ssbc-green/20 p-6 text-center hover:border-ssbc-gold transition-colors relative"
-                                                     @dragover.prevent
-                                                     @drop.prevent="handleFileDrop(field, activeRepeat, $event)">
-                                                    <input type="file"
-                                                           :id="'f_' + field.id + '_' + activeRepeat"
-                                                           :name="'files[' + field.id + '][' + activeRepeat + ']'"
-                                                           :accept="'.' + (field.file_config?.accepted_types || ['pdf']).join(',.')"
-                                                           :required="field.is_required && activeRepeat === 0"
-                                                           @change="handleFileSelect(field, activeRepeat, $event)"
-                                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                                    <div x-show="!fileNames[field.id + '_' + activeRepeat]">
-                                                        <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
-                                                        <p class="text-xs text-ssbc-sage/70 mt-1"
-                                                           x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 5) + ' MB'"></p>
+                                            {{-- checkbox_group --}}
+                                            <template x-if="field.field_type === 'checkbox_group'">
+                                                <div>
+                                                    <div class="grid sm:grid-cols-2 gap-2 mt-1">
+                                                        <template x-for="opt in (field.options || [])" :key="opt.value">
+                                                            <label class="flex items-start gap-2 cursor-pointer text-sm p-2 hover:bg-ssbc-beige/40 rounded transition-colors">
+                                                                <input type="checkbox"
+                                                                       :value="opt.value"
+                                                                       :checked="(checkboxAnswers[field.id + '_' + (ri-1)] || []).includes(opt.value)"
+                                                                       @change="toggleCheckbox(field.id, ri-1, opt.value)"
+                                                                       class="mt-0.5 shrink-0 text-ssbc-gold focus:ring-ssbc-gold">
+                                                                <span x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></span>
+                                                            </label>
+                                                        </template>
                                                     </div>
-                                                    <div x-show="fileNames[field.id + '_' + activeRepeat]"
-                                                         class="flex items-center justify-center gap-2">
-                                                        <span class="text-sm text-ssbc-green font-semibold"
-                                                              x-text="fileNames[field.id + '_' + activeRepeat]"></span>
-                                                        <span class="text-xs text-ssbc-sage">✓</span>
-                                                    </div>
+                                                    {{-- Hidden serialized value --}}
+                                                    <input type="hidden"
+                                                           :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                           :value="JSON.stringify(checkboxAnswers[field.id + '_' + (ri-1)] || [])">
                                                 </div>
-                                                <p x-show="fileErrors[field.id + '_' + activeRepeat]"
-                                                   x-text="fileErrors[field.id + '_' + activeRepeat]"
-                                                   class="text-red-500 text-xs mt-1"></p>
-                                            </div>
-                                        </template>
+                                            </template>
 
-                                        {{-- declaration --}}
-                                        <template x-if="field.field_type === 'declaration'">
-                                            <div class="border border-ssbc-green/15 bg-ssbc-beige/50 p-6">
-                                                <label class="flex items-start gap-3 cursor-pointer">
-                                                    <input type="checkbox"
-                                                           :name="'answers[' + field.id + '][' + activeRepeat + ']'"
-                                                           value="1"
-                                                           :required="field.is_required"
-                                                           x-model="answers[field.id + '_' + activeRepeat]"
-                                                           class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
-                                                    <span class="text-sm text-ssbc-dark leading-relaxed"
-                                                          x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
-                                                </label>
-                                            </div>
-                                        </template>
+                                            {{-- file --}}
+                                            <template x-if="field.field_type === 'file'">
+                                                <div>
+                                                    <div class="border-2 border-dashed border-ssbc-green/20 p-6 text-center hover:border-ssbc-gold transition-colors relative"
+                                                         @dragover.prevent
+                                                         @drop.prevent="handleFileDrop(field, ri-1, $event)">
+                                                        <input type="file"
+                                                               :id="'f_' + field.id + '_' + (ri-1)"
+                                                               :name="'files[' + field.id + '][' + (ri-1) + ']'"
+                                                               :accept="'.' + (field.file_config?.accepted_types || ['pdf']).join(',.')"
+                                                               :required="field.is_required && ri === 1"
+                                                               @change="handleFileSelect(field, ri-1, $event)"
+                                                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                                        <div x-show="!fileNames[field.id + '_' + (ri-1)]">
+                                                            <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
+                                                            <p class="text-xs text-ssbc-sage/70 mt-1"
+                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 5) + ' MB'"></p>
+                                                        </div>
+                                                        <div x-show="fileNames[field.id + '_' + (ri-1)]"
+                                                             class="flex items-center justify-center gap-2">
+                                                            <span class="text-sm text-ssbc-green font-semibold"
+                                                                  x-text="fileNames[field.id + '_' + (ri-1)]"></span>
+                                                            <span class="text-xs text-ssbc-sage">✓</span>
+                                                        </div>
+                                                    </div>
+                                                    <p x-show="fileErrors[field.id + '_' + (ri-1)]"
+                                                       x-text="fileErrors[field.id + '_' + (ri-1)]"
+                                                       class="text-red-500 text-xs mt-1"></p>
+                                                </div>
+                                            </template>
 
-                                        {{-- Field error --}}
-                                        <p x-show="stepErrors[field.id + '_' + activeRepeat]"
-                                           x-text="stepErrors[field.id + '_' + activeRepeat]"
-                                           class="text-red-500 text-xs mt-1"></p>
-                                    </div>
-                                </template>
-                            </div>
+                                            {{-- declaration --}}
+                                            <template x-if="field.field_type === 'declaration'">
+                                                <div class="border border-ssbc-green/15 bg-ssbc-beige/50 p-6">
+                                                    <label class="flex items-start gap-3 cursor-pointer">
+                                                        <input type="checkbox"
+                                                               :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                               value="1"
+                                                               :required="field.is_required"
+                                                               x-model="answers[field.id + '_' + (ri-1)]"
+                                                               class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
+                                                        <span class="text-sm text-ssbc-dark leading-relaxed"
+                                                              x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
+                                                    </label>
+                                                </div>
+                                            </template>
+
+                                            {{-- Field error --}}
+                                            <p x-show="stepErrors[field.id + '_' + (ri-1)]"
+                                               x-text="stepErrors[field.id + '_' + (ri-1)]"
+                                               class="text-red-500 text-xs mt-1"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </template>
 
@@ -315,17 +318,11 @@ function dynamicForm(sectionsJson) {
             return this.sections[this.step] || null;
         },
 
-        get repeatCount() {
-            if (!this.currentSection?.is_repeatable) return 1;
-            return this.repeats[this.currentSection.id] || 1;
-        },
-
-        addRepeat() {
-            const s = this.currentSection;
-            if (!s?.is_repeatable) return;
-            const current = this.repeats[s.id] || 1;
-            if (current < s.max_repeats) {
-                this.repeats[s.id] = current + 1;
+        addRepeat(section) {
+            if (!section?.is_repeatable) return;
+            const current = this.repeats[section.id] || 1;
+            if (current < section.max_repeats) {
+                this.repeats[section.id] = current + 1;
                 this.activeRepeat = current;
             }
         },

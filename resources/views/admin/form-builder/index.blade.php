@@ -166,14 +166,20 @@
                     <label class="ssbc-label mb-0">Options</label>
                     <button type="button" @click="addOption()" class="text-xs text-ssbc-gold hover:underline">+ Add Option</button>
                 </div>
+                <div x-show="fieldForm.options.length > 0" class="flex gap-2 text-xs font-semibold text-ssbc-sage mb-1 px-0.5">
+                    <span class="flex-1">Label (English)</span>
+                    <span class="flex-1">Label (Arabic)</span>
+                    <span class="w-28">Value</span>
+                    <span class="w-5"></span>
+                </div>
                 <div class="space-y-2">
                     <template x-for="(opt, i) in fieldForm.options" :key="i">
                         <div class="flex gap-2 items-center">
-                            <input type="text" x-model="opt.label_en" placeholder="Label EN"
+                            <input type="text" x-model="opt.label_en" placeholder="e.g. Technology"
                                    class="ssbc-input text-sm flex-1">
-                            <input type="text" x-model="opt.label_ar" placeholder="Label AR" dir="rtl"
+                            <input type="text" x-model="opt.label_ar" placeholder="e.g. تكنولوجيا" dir="rtl"
                                    class="ssbc-input text-sm flex-1">
-                            <input type="text" x-model="opt.value" placeholder="value"
+                            <input type="text" x-model="opt.value" placeholder="tech"
                                    class="ssbc-input text-sm w-28">
                             <button type="button" @click="fieldForm.options.splice(i,1)"
                                     class="text-red-500 hover:text-red-700 shrink-0">✕</button>

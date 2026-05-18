@@ -4,10 +4,17 @@
     <div class="ssbc-container py-14">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-white font-display font-bold text-lg">{{ __('common.site_short') }}</span>
-                    <span class="w-1 h-1 rounded-full bg-ssbc-gold"></span>
-                </div>
+                <a href="{{ route('home', ['locale' => $locale]) }}"
+                   class="inline-block mb-1"
+                   aria-label="{{ __('common.site_name') }}">
+                    <img
+                        src="{{ asset('images/logos/logo-light.png') }}"
+                        alt="{{ __('common.site_name') }}"
+                        class="h-12 w-auto"
+                        width="800" height="346"
+                        loading="lazy">
+                </a>
+                <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>
                 <p class="text-sm text-ssbc-sage leading-relaxed">
                     {{ $siteSettings->footerDesc($locale) ?: __('common.site_name') }}
                 </p>
