@@ -18,9 +18,9 @@
 
             {{-- Institutional header --}}
             <div class="flex flex-col items-center mb-12 text-center">
-                <img src="{{ asset('images/logos/logo-light.png') }}"
+                <img src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
                      alt="{{ __('common.site_name') }}"
-                     class="h-16 md:h-20 w-auto mb-4" width="800" height="346" loading="lazy">
+                     class="h-16 md:h-20 w-auto mb-4" loading="lazy">
                 <div class="w-16 h-px bg-ssbc-gold"></div>
             </div>
 
@@ -31,7 +31,7 @@
             @endif
 
             @if ($errors->any())
-                <div class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+                <div class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800" id="server-errors">
                     <p class="font-semibold mb-2">Please correct the following errors:</p>
                     <ul class="list-disc list-inside space-y-1">
                         @foreach ($errors->all() as $error)
@@ -42,6 +42,15 @@
             @endif
 
             <div x-data="dynamicForm({{ $form->toJson() }})" x-init="init()">
+
+                {{-- Client-side submission error summary --}}
+                <div x-show="submitError" x-cloak
+                     class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+                    <p class="font-semibold mb-2" x-text="submitError"></p>
+                    <p x-show="firstErrorStep !== null">
+                        Returning to step <span x-text="firstErrorStep + 1"></span> — please fill the highlighted fields.
+                    </p>
+                </div>
 
                 {{-- Step indicator --}}
                 <div class="flex items-center justify-between mb-10">
@@ -113,15 +122,22 @@
                                                 <span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
                                             </label>
 
-                                            {{-- text / email / tel / number / url --}}
+                                            {{-- text / email / tel / number / url
+                                                 NOTE: type=url is rendered as type=text so that browsers don't
+                                                 fire native URL validation against hidden steps and silently
+                                                 block the submit. We validate URLs server-side and inline. --}}
                                             <template x-if="['text','email','tel','number','url'].includes(field.field_type)">
                                                 <input
                                                     :id="'f_' + field.id + '_' + (ri-1)"
-                                                    :type="field.field_type"
+                                                    :type="field.field_type === 'url' ? 'text' : field.field_type"
+                                                    :inputmode="field.field_type === 'tel' ? 'tel' : (field.field_type === 'number' ? 'numeric' : null)"
                                                     :name="'answers[' + field.id + '][' + (ri-1) + ']'"
                                                     :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
-                                                    :required="field.is_required && ri === 1"
+                                                    :required="step === sIdx && field.is_required && ri === 1"
+                                                    :min="field.field_type === 'number' ? (field.validation_rules?.min ?? null) : null"
+                                                    :max="field.field_type === 'number' ? (field.validation_rules?.max ?? null) : null"
                                                     x-model="answers[field.id + '_' + (ri-1)]"
+                                                    @blur="validateField(field, ri-1)"
                                                     class="ssbc-input"
                                                 >
                                             </template>
@@ -132,7 +148,7 @@
                                                     :id="'f_' + field.id + '_' + (ri-1)"
                                                     :name="'answers[' + field.id + '][' + (ri-1) + ']'"
                                                     :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
-                                                    :required="field.is_required && ri === 1"
+                                                    :required="step === sIdx && field.is_required && ri === 1"
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     rows="3"
                                                     class="ssbc-input"
@@ -145,8 +161,10 @@
                                                     :id="'f_' + field.id + '_' + (ri-1)"
                                                     type="date"
                                                     :name="'answers[' + field.id + '][' + (ri-1) + ']'"
-                                                    :required="field.is_required && ri === 1"
+                                                    :required="step === sIdx && field.is_required && ri === 1"
+                                                    :max="dateMaxFor(field)"
                                                     x-model="answers[field.id + '_' + (ri-1)]"
+                                                    @blur="validateField(field, ri-1)"
                                                     class="ssbc-input"
                                                 >
                                             </template>
@@ -156,7 +174,7 @@
                                                 <select
                                                     :id="'f_' + field.id + '_' + (ri-1)"
                                                     :name="'answers[' + field.id + '][' + (ri-1) + ']'"
-                                                    :required="field.is_required && ri === 1"
+                                                    :required="step === sIdx && field.is_required && ri === 1"
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     class="ssbc-input"
                                                 >
@@ -216,7 +234,7 @@
                                                                :id="'f_' + field.id + '_' + (ri-1)"
                                                                :name="'files[' + field.id + '][' + (ri-1) + ']'"
                                                                :accept="'.' + (field.file_config?.accepted_types || ['pdf']).join(',.')"
-                                                               :required="field.is_required && ri === 1"
+                                                               :required="step === sIdx && field.is_required && ri === 1 && !fileNames[field.id + '_' + (ri-1)]"
                                                                @change="handleFileSelect(field, ri-1, $event)"
                                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                                                         <div x-show="!fileNames[field.id + '_' + (ri-1)]">
@@ -244,7 +262,7 @@
                                                         <input type="checkbox"
                                                                :name="'answers[' + field.id + '][' + (ri-1) + ']'"
                                                                value="1"
-                                                               :required="field.is_required"
+                                                               :required="step === sIdx && field.is_required"
                                                                x-model="answers[field.id + '_' + (ri-1)]"
                                                                class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
                                                         <span class="text-sm text-ssbc-dark leading-relaxed"
@@ -279,9 +297,11 @@
                         </button>
 
                         @if(!(isset($preview) && $preview))
-                        <button type="submit" class="ssbc-btn-primary"
-                                x-show="step === sections.length - 1">
-                            {{ __('join.submit') }}
+                        <button type="submit"
+                                class="ssbc-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                x-show="step === sections.length - 1"
+                                :disabled="submitting"
+                                x-text="submitting ? '{{ __('join.submitting') }}' : '{{ __('join.submit') }}'">
                         </button>
                         @endif
                     </div>
@@ -296,6 +316,11 @@ function dynamicForm(sectionsJson) {
     const sections = sectionsJson;
     const locale = document.documentElement.lang || 'en';
 
+    // International phone: +<digits, 8-15>
+    const phoneRegex = /^\+[1-9]\d{7,14}$/;
+    // Loose URL pattern — must start with http(s):// and have a host
+    const urlRegex = /^https?:\/\/[^\s.]+\.[^\s]+$/i;
+
     return {
         sections,
         locale,
@@ -307,6 +332,9 @@ function dynamicForm(sectionsJson) {
         fileNames: {},
         fileErrors: {},
         stepErrors: {},
+        submitting: false,
+        submitError: null,
+        firstErrorStep: null,
 
         init() {
             sections.forEach(s => {
@@ -316,6 +344,17 @@ function dynamicForm(sectionsJson) {
 
         get currentSection() {
             return this.sections[this.step] || null;
+        },
+
+        // Returns the max date for date fields. Date-of-birth fields cap at 18 years ago.
+        dateMaxFor(field) {
+            const label = (field.label_en || '').toLowerCase();
+            if (label.includes('birth') || label.includes('dob')) {
+                const d = new Date();
+                d.setFullYear(d.getFullYear() - 18);
+                return d.toISOString().slice(0, 10);
+            }
+            return new Date().toISOString().slice(0, 10);
         },
 
         addRepeat(section) {
@@ -369,36 +408,117 @@ function dynamicForm(sectionsJson) {
             this.fileNames[key] = file.name;
         },
 
-        validateCurrentStep() {
-            const s = this.currentSection;
+        // Inline format check for one field — runs on blur. Sets stepErrors[key].
+        validateField(field, repeatIndex) {
+            const key = field.id + '_' + repeatIndex;
+            const val = this.answers[key];
+            if (!val) { delete this.stepErrors[key]; return true; }
+
+            if (field.field_type === 'email') {
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    this.stepErrors[key] = 'Please enter a valid email address.';
+                    return false;
+                }
+            }
+            if (field.field_type === 'tel') {
+                if (!phoneRegex.test(String(val).replace(/\s/g, ''))) {
+                    this.stepErrors[key] = 'Include country code, e.g. +966 50 000 0000';
+                    return false;
+                }
+            }
+            if (field.field_type === 'url') {
+                if (!urlRegex.test(val)) {
+                    this.stepErrors[key] = 'Please enter a full URL (https://example.com).';
+                    return false;
+                }
+            }
+            if (field.field_type === 'number') {
+                const n = Number(val);
+                const min = field.validation_rules?.min;
+                const max = field.validation_rules?.max;
+                if (Number.isNaN(n)) {
+                    this.stepErrors[key] = 'Please enter a number.';
+                    return false;
+                }
+                if (min != null && n < min) {
+                    this.stepErrors[key] = 'Value must be at least ' + min + '.';
+                    return false;
+                }
+                if (max != null && n > max) {
+                    this.stepErrors[key] = 'Value must be at most ' + max + '.';
+                    return false;
+                }
+            }
+            if (field.field_type === 'date') {
+                const max = this.dateMaxFor(field);
+                if (val > max) {
+                    const label = (field.label_en || '').toLowerCase();
+                    this.stepErrors[key] = label.includes('birth')
+                        ? 'You must be at least 18 years old.'
+                        : 'Date cannot be in the future.';
+                    return false;
+                }
+            }
+            delete this.stepErrors[key];
+            return true;
+        },
+
+        // Validate one whole section. Returns true if no errors. Sets stepErrors for failing keys.
+        validateSection(s) {
             if (!s) return true;
             const count = s.is_repeatable ? (this.repeats[s.id] || 1) : 1;
             let valid = true;
-            this.stepErrors = {};
 
             for (const field of s.fields) {
-                if (!field.is_required) continue;
                 for (let r = 0; r < count; r++) {
                     if (r > 0 && !s.is_repeatable) break;
                     const key = field.id + '_' + r;
+                    const requiredHere = field.is_required && r === 0;
 
                     if (field.field_type === 'checkbox_group') {
-                        if (!(this.checkboxAnswers[key]?.length)) {
-                            if (r === 0) { this.stepErrors[key] = 'Please select at least one option.'; valid = false; }
+                        if (requiredHere && !(this.checkboxAnswers[key]?.length)) {
+                            this.stepErrors[key] = 'Please select at least one option.';
+                            valid = false;
                         }
                     } else if (field.field_type === 'file') {
-                        if (!this.fileNames[key] && r === 0) {
-                            this.stepErrors[key] = 'This file is required.'; valid = false;
+                        if (requiredHere && !this.fileNames[key]) {
+                            this.stepErrors[key] = 'This file is required.';
+                            valid = false;
                         }
-                    } else if (field.field_type !== 'declaration') {
+                    } else if (field.field_type === 'declaration') {
+                        if (requiredHere && !this.answers[key]) {
+                            this.stepErrors[key] = 'You must accept the declaration to submit.';
+                            valid = false;
+                        }
+                    } else {
                         const val = this.answers[key];
-                        if (!val || val === '') {
-                            if (r === 0) { this.stepErrors[key] = 'This field is required.'; valid = false; }
+                        if (requiredHere && (val === undefined || val === null || val === '')) {
+                            this.stepErrors[key] = 'This field is required.';
+                            valid = false;
+                        } else if (val) {
+                            // Format check
+                            if (!this.validateField(field, r)) valid = false;
                         }
                     }
                 }
             }
             return valid;
+        },
+
+        validateCurrentStep() {
+            this.stepErrors = {};
+            return this.validateSection(this.currentSection);
+        },
+
+        // Walk every section. Returns index of first failing section, or -1 if all pass.
+        validateAllSections() {
+            this.stepErrors = {};
+            let firstFail = -1;
+            for (let i = 0; i < this.sections.length; i++) {
+                const ok = this.validateSection(this.sections[i]);
+                if (!ok && firstFail === -1) firstFail = i;
+            }
+            return firstFail;
         },
 
         nextStep() {
@@ -415,7 +535,24 @@ function dynamicForm(sectionsJson) {
         },
 
         onSubmit(event) {
-            if (!this.validateCurrentStep()) { event.preventDefault(); return; }
+            if (this.submitting) return;
+
+            const failingStep = this.validateAllSections();
+            if (failingStep !== -1) {
+                this.firstErrorStep = failingStep;
+                this.submitError = 'Please complete all required fields before submitting.';
+                this.step = failingStep;
+                this.activeRepeat = 0;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // All client-side checks passed — release to native submit.
+            this.submitError = null;
+            this.firstErrorStep = null;
+            this.submitting = true;
+            // Re-enable if the page is restored from bfcache (back nav).
+            window.addEventListener('pageshow', () => { this.submitting = false; }, { once: true });
             event.target.submit();
         },
     };

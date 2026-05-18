@@ -42,4 +42,45 @@ class FormField extends Model
         $mb = $this->file_config['max_size_mb'] ?? 5;
         return $mb * 1024;
     }
+
+    /**
+     * Render a stored answer for display.
+     * - checkbox_group: decode JSON, map values to option labels, join with ", "
+     * - select/radio: map single value to option label
+     * - declaration: "Accepted" / "—"
+     * - other types: trimmed string, or em-dash when empty
+     */
+    public function formatAnswer(?string $raw, string $locale = 'en'): string
+    {
+        if ($raw === null || $raw === '') {
+            return $this->field_type === 'declaration' ? '—' : '—';
+        }
+
+        $optionLabel = function (string $value) use ($locale): string {
+            foreach (($this->options ?? []) as $opt) {
+                if (($opt['value'] ?? null) === $value) {
+                    return $locale === 'ar'
+                        ? ($opt['label_ar'] ?? $opt['label_en'] ?? $value)
+                        : ($opt['label_en'] ?? $opt['label_ar'] ?? $value);
+                }
+            }
+            return $value;
+        };
+
+        if ($this->field_type === 'checkbox_group') {
+            $decoded = json_decode($raw, true);
+            if (! is_array($decoded)) return $raw;
+            return collect($decoded)->map($optionLabel)->join(', ');
+        }
+
+        if (in_array($this->field_type, ['select', 'radio'], true)) {
+            return $optionLabel($raw);
+        }
+
+        if ($this->field_type === 'declaration') {
+            return $raw === '1' || $raw === 1 || $raw === true ? 'Accepted' : '—';
+        }
+
+        return $raw;
+    }
 }

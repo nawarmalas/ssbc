@@ -26,18 +26,23 @@
     <div class="ssbc-container">
         <div class="flex items-center justify-between h-16">
 
-            {{-- Logo --}}
+            {{-- Logo — swaps variant based on scrolled state (dark green vs white header) --}}
             <a href="{{ route('home', ['locale' => $locale]) }}"
-               class="flex flex-col items-start shrink-0"
+               class="flex items-center shrink-0"
                aria-label="{{ __('common.site_name') }}">
                 <img
-                    src="{{ asset('images/logos/logo-light.png') }}"
+                    src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-10 sm:h-11 w-auto"
-                    width="800" height="346"
+                    class="h-9 md:h-12 w-auto"
+                    x-show="!scrolled"
                     loading="eager">
-                <span class="block w-full h-px mt-0.5 transition-colors duration-300"
-                      :class="scrolled ? 'bg-ssbc-gold/70' : 'bg-ssbc-gold/40'"></span>
+                <img
+                    src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
+                    alt="{{ __('common.site_name') }}"
+                    class="h-9 md:h-12 w-auto"
+                    x-show="scrolled"
+                    x-cloak
+                    loading="eager">
             </a>
 
             {{-- Desktop Nav --}}

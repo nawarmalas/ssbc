@@ -15,7 +15,9 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Relative URL so generated paths work regardless of the host the app is served from.
+            // Requires `php artisan storage:link` so /storage/* resolves to storage/app/public.
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

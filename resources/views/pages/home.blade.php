@@ -5,34 +5,51 @@
 @section('content')
 @php $locale = app()->getLocale(); @endphp
 
-{{-- 1. Hero --}}
-<section class="bg-ssbc-green text-white">
-    <div class="ssbc-container py-24 lg:py-32">
-        <p class="ssbc-eyebrow mb-6">{{ __('home.hero.eyebrow') }}</p>
+{{-- 1. Hero — signing ceremony photo with dark green overlay --}}
+<section class="relative min-h-[480px] lg:min-h-[640px] flex items-center text-white overflow-hidden">
 
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-[1.1] max-w-4xl">
-            {{ __('home.hero.headline') }}
-        </h1>
+    {{-- Background photo --}}
+    <div class="absolute inset-0 z-0">
+        <img
+            src="{{ asset('images/logos/hero-bg.jpeg') }}"
+            alt=""
+            class="w-full h-full object-cover object-center"
+            aria-hidden="true">
+        {{-- Dark green overlay keeps the brand colour and ensures text contrast --}}
+        <div class="absolute inset-0 bg-ssbc-green/85"></div>
+    </div>
 
-        <p class="mt-6 text-lg text-ssbc-sage font-display max-w-3xl" dir="rtl" lang="ar">
-            {{ __('home.hero.tagline') }}
-        </p>
+    {{-- Content --}}
+    <div class="relative z-10 w-full">
+        <div class="ssbc-container py-24 lg:py-36">
+            <p class="ssbc-eyebrow mb-6">{{ __('home.hero.eyebrow') }}</p>
 
-        <div class="mt-8 w-12 h-px bg-ssbc-gold"></div>
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-[1.1] max-w-4xl">
+                {{ __('home.hero.headline') }}
+            </h1>
 
-        <p class="mt-6 max-w-2xl text-white/85 leading-relaxed text-base">
-            {{ __('home.hero.body') }}
-        </p>
+            <p class="mt-6 text-lg text-ssbc-sage font-display max-w-3xl" dir="rtl" lang="ar">
+                {{ __('home.hero.tagline') }}
+            </p>
 
-        <div class="mt-10 flex flex-wrap gap-4">
-            <a href="{{ route('about', ['locale' => $locale]) }}" class="ssbc-btn-primary">
-                {{ __('home.hero.cta_primary') }}
-            </a>
-            <a href="{{ route('contact.create', ['locale' => $locale]) }}" class="ssbc-btn-outline">
-                {{ __('home.hero.cta_secondary') }}
-            </a>
+            <div class="mt-8 w-12 h-px bg-ssbc-gold"></div>
+
+            <p class="mt-6 max-w-2xl text-white/85 leading-relaxed text-base">
+                {{ __('home.hero.body') }}
+            </p>
+
+            <div class="mt-10 flex flex-wrap gap-4">
+                <a href="{{ route('about', ['locale' => $locale]) }}" class="ssbc-btn-primary">
+                    {{ __('home.hero.cta_primary') }}
+                </a>
+                <a href="{{ route('contact.create', ['locale' => $locale]) }}" class="ssbc-btn-outline">
+                    {{ __('home.hero.cta_secondary') }}
+                </a>
+            </div>
         </div>
     </div>
+
+    <span class="absolute bottom-3 right-4 text-white/30 text-xs z-10">SSBC, 2026</span>
 </section>
 
 {{-- 2. Council Overview --}}

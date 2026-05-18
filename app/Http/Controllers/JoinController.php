@@ -14,7 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class JoinController extends Controller
 {
@@ -29,13 +28,34 @@ class JoinController extends Controller
         $form = FormService::getActiveForm('join-us');
         $repeats = $request->input('_repeats', []);
 
+        // Normalise phone fields — strip whitespace before the regex check.
+        $answers = (array) $request->input('answers', []);
+        foreach ($form as $section) {
+            foreach ($section->fields as $field) {
+                if ($field->field_type !== 'tel') continue;
+                if (! isset($answers[$field->id])) continue;
+                foreach ($answers[$field->id] as $r => $val) {
+                    if (is_string($val) && $val !== '') {
+                        $answers[$field->id][$r] = preg_replace('/\s+/', '', $val);
+                    }
+                }
+            }
+        }
+        $request->merge(['answers' => $answers]);
+
         // Build validation rules dynamically
         $rules = ['_repeats' => 'array'];
+        $today = now()->toDateString();
+        $dobMax = now()->subYears(18)->toDateString();
+        $phoneRegex = 'regex:/^\+[1-9]\d{7,14}$/';
 
         foreach ($form as $section) {
             $count = $section->is_repeatable ? max(1, (int) ($repeats[$section->id] ?? 1)) : 1;
 
             foreach ($section->fields as $field) {
+                $labelLower = strtolower($field->label_en ?? '');
+                $isDob = str_contains($labelLower, 'birth') || str_contains($labelLower, 'dob');
+
                 for ($r = 0; $r < $count; $r++) {
                     $key = "answers.{$field->id}.{$r}";
 
@@ -43,22 +63,50 @@ class JoinController extends Controller
                         $fileKey = "files.{$field->id}.{$r}";
                         $mimes = $field->acceptedMimes();
                         $max   = $field->maxFileSizeKb();
-                        $rules[$fileKey] = array_filter([
+                        $rules[$fileKey] = array_values(array_filter([
                             $field->is_required && $r === 0 ? 'required' : 'nullable',
                             'file',
                             "mimes:{$mimes}",
                             "max:{$max}",
-                        ]);
-                    } else {
-                        $rules[$key] = $field->is_required && $r === 0 ? 'required' : 'nullable';
-                        if ($field->field_type === 'email') $rules[$key] .= '|email';
-                        if ($field->field_type === 'url')   $rules[$key] .= '|url';
+                        ]));
+                        continue;
                     }
+
+                    $fieldRules = [$field->is_required && $r === 0 ? 'required' : 'nullable'];
+
+                    switch ($field->field_type) {
+                        case 'email':
+                            $fieldRules[] = 'email';
+                            break;
+                        case 'url':
+                            $fieldRules[] = 'url';
+                            break;
+                        case 'tel':
+                            $fieldRules[] = $phoneRegex;
+                            break;
+                        case 'number':
+                            $fieldRules[] = 'integer';
+                            $min = $field->validation_rules['min'] ?? null;
+                            $max = $field->validation_rules['max'] ?? null;
+                            if ($min !== null) $fieldRules[] = "min:{$min}";
+                            if ($max !== null) $fieldRules[] = "max:{$max}";
+                            break;
+                        case 'date':
+                            $fieldRules[] = 'date';
+                            $fieldRules[] = $isDob ? "before:{$dobMax}" : "before_or_equal:{$today}";
+                            break;
+                    }
+
+                    $rules[$key] = $fieldRules;
                 }
             }
         }
 
-        $request->validate($rules);
+        $request->validate($rules, [
+            'answers.*.*.regex' => 'Please enter a phone number with country code, e.g. +966 50 000 0000.',
+            'answers.*.*.before' => 'You must be at least 18 years old.',
+            'answers.*.*.before_or_equal' => 'Date cannot be in the future.',
+        ]);
 
         // Resolve display_name from first text field of first section
         $firstSection = $form->first();
@@ -93,14 +141,12 @@ class JoinController extends Controller
             FormAnswer::insert($answerRows);
         }
 
-        // Persist file uploads
-        $uuid = (string) Str::uuid();
-
+        // Persist file uploads under submissions/{submission_id}/
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $fieldId => $repeatFiles) {
                 foreach ($repeatFiles as $repeatIndex => $file) {
                     if (! $file || ! $file->isValid()) continue;
-                    $path = $file->store("submissions/{$uuid}", 'public');
+                    $path = $file->store("submissions/{$submission->id}", 'public');
                     FormUpload::create([
                         'submission_id' => $submission->id,
                         'field_id'      => (int) $fieldId,

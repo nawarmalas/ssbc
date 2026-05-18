@@ -17,80 +17,91 @@
         @method('PATCH')
     @endif
 
-    <div class="grid md:grid-cols-2 gap-6">
-        <div>
-            <label class="ssbc-label" for="title_en">{{ __('admin.news_title_en') }}</label>
-            <input id="title_en" name="title_en" type="text" required class="ssbc-input"
+    {{-- Bilingual title --}}
+    <div class="grid md:grid-cols-2 md:divide-x divide-gray-200 md:gap-0">
+        <div class="md:pr-6">
+            <label class="ssbc-admin-label" for="title_en">{{ __('admin.news_title_en') }}</label>
+            <input id="title_en" name="title_en" type="text" required class="ssbc-admin-input"
                    value="{{ old('title_en', $post->title_en) }}">
         </div>
-        <div>
-            <label class="ssbc-label" for="title_ar">{{ __('admin.news_title_ar') }}</label>
-            <input id="title_ar" name="title_ar" type="text" required class="ssbc-input" dir="rtl" lang="ar"
+        <div class="md:pl-6 mt-4 md:mt-0">
+            <label class="ssbc-admin-label" for="title_ar">{{ __('admin.news_title_ar') }}</label>
+            <input id="title_ar" name="title_ar" type="text" required class="ssbc-admin-input" dir="rtl" lang="ar"
                    value="{{ old('title_ar', $post->title_ar) }}">
         </div>
+    </div>
 
-        <div>
-            <label class="ssbc-label" for="excerpt_en">{{ __('admin.news_excerpt_en') }}</label>
-            <textarea id="excerpt_en" name="excerpt_en" rows="3" class="ssbc-input">{{ old('excerpt_en', $post->excerpt_en) }}</textarea>
+    {{-- Bilingual excerpt --}}
+    <div class="grid md:grid-cols-2 md:divide-x divide-gray-200">
+        <div class="md:pr-6">
+            <label class="ssbc-admin-label" for="excerpt_en">{{ __('admin.news_excerpt_en') }}</label>
+            <textarea id="excerpt_en" name="excerpt_en" rows="3" class="ssbc-admin-input">{{ old('excerpt_en', $post->excerpt_en) }}</textarea>
         </div>
-        <div>
-            <label class="ssbc-label" for="excerpt_ar">{{ __('admin.news_excerpt_ar') }}</label>
-            <textarea id="excerpt_ar" name="excerpt_ar" rows="3" class="ssbc-input" dir="rtl" lang="ar">{{ old('excerpt_ar', $post->excerpt_ar) }}</textarea>
+        <div class="md:pl-6 mt-4 md:mt-0">
+            <label class="ssbc-admin-label" for="excerpt_ar">{{ __('admin.news_excerpt_ar') }}</label>
+            <textarea id="excerpt_ar" name="excerpt_ar" rows="3" class="ssbc-admin-input" dir="rtl" lang="ar">{{ old('excerpt_ar', $post->excerpt_ar) }}</textarea>
         </div>
+    </div>
 
-        <div>
-            <label class="ssbc-label" for="content_en">{{ __('admin.news_content_en') }}</label>
-            <textarea id="content_en" name="content_en" rows="12" class="ssbc-input font-mono text-xs">{{ old('content_en', $post->content_en) }}</textarea>
+    {{-- Bilingual content --}}
+    <div class="grid md:grid-cols-2 md:divide-x divide-gray-200">
+        <div class="md:pr-6">
+            <label class="ssbc-admin-label" for="content_en">{{ __('admin.news_content_en') }}</label>
+            <textarea id="content_en" name="content_en" rows="12" class="ssbc-admin-input font-mono text-xs">{{ old('content_en', $post->content_en) }}</textarea>
         </div>
-        <div>
-            <label class="ssbc-label" for="content_ar">{{ __('admin.news_content_ar') }}</label>
-            <textarea id="content_ar" name="content_ar" rows="12" class="ssbc-input font-mono text-xs" dir="rtl" lang="ar">{{ old('content_ar', $post->content_ar) }}</textarea>
+        <div class="md:pl-6 mt-4 md:mt-0">
+            <label class="ssbc-admin-label" for="content_ar">{{ __('admin.news_content_ar') }}</label>
+            <textarea id="content_ar" name="content_ar" rows="12" class="ssbc-admin-input font-mono text-xs" dir="rtl" lang="ar">{{ old('content_ar', $post->content_ar) }}</textarea>
         </div>
+    </div>
 
+    {{-- Metadata row --}}
+    <div class="grid md:grid-cols-3 gap-6">
         <div>
-            <label class="ssbc-label" for="category">{{ __('admin.news_category') }}</label>
-            <input id="category" name="category" type="text" class="ssbc-input"
+            <label class="ssbc-admin-label" for="category">{{ __('admin.news_category') }}</label>
+            <input id="category" name="category" type="text" class="ssbc-admin-input"
                    value="{{ old('category', $post->category) }}">
         </div>
 
         <div>
-            <label class="ssbc-label" for="status">{{ __('admin.status') }}</label>
-            <select id="status" name="status" required class="ssbc-input">
+            <label class="ssbc-admin-label" for="status">{{ __('admin.status') }}</label>
+            <select id="status" name="status" required class="ssbc-admin-input">
                 @foreach(['draft','published'] as $s)
                     <option value="{{ $s }}" @selected(old('status', $post->status) === $s)>{{ __('admin.status_'.$s) }}</option>
                 @endforeach
             </select>
         </div>
 
-        <div class="md:col-span-2">
-            <label class="ssbc-label" for="published_at">{{ __('admin.news_published_at') }}</label>
-            <input id="published_at" name="published_at" type="datetime-local" class="ssbc-input"
+        <div>
+            <label class="ssbc-admin-label" for="published_at">{{ __('admin.news_published_at') }}</label>
+            <input id="published_at" name="published_at" type="datetime-local" class="ssbc-admin-input"
                    value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
-        </div>
-
-        <div class="md:col-span-2">
-            <label class="ssbc-label" for="featured_image">{{ __('admin.news_featured_image') }}</label>
-            @if($isEdit && $post->featured_image)
-                <div class="mb-3">
-                    <img src="{{ $post->featuredImageUrl() }}" alt="" class="h-32 border border-ssbc-green/15">
-                </div>
-            @endif
-            <input id="featured_image" name="featured_image" type="file" accept="image/*" class="ssbc-input bg-white">
         </div>
     </div>
 
-    <div class="flex items-center justify-between border-t border-ssbc-green/15 pt-6">
-        <a href="{{ route('admin.news.index') }}" class="text-sm text-ssbc-sage hover:text-ssbc-green">{{ __('admin.back') }}</a>
+    {{-- Featured image --}}
+    <div>
+        <label class="ssbc-admin-label" for="featured_image">{{ __('admin.news_featured_image') }}</label>
+        @if($isEdit && $post->featured_image)
+            <div class="mb-3">
+                <img src="{{ $post->featuredImageUrl() }}" alt="" class="h-32 border border-gray-200">
+            </div>
+        @endif
+        <input id="featured_image" name="featured_image" type="file" accept="image/*" class="ssbc-admin-input bg-white">
+    </div>
 
-        <div class="flex items-center gap-4">
+    <div class="flex items-center justify-between border-t border-gray-200 pt-6">
+        <a href="{{ route('admin.news.index') }}" class="text-sm text-ssbc-sage hover:text-ssbc-green">← Back to list</a>
+
+        <div class="flex items-center gap-3">
             @if($isEdit)
                 <form method="POST" action="{{ route('admin.news.destroy', $post) }}"
                       onsubmit="return confirm('{{ __('admin.confirm_delete') }}');">
                     @csrf @method('DELETE')
-                    <button type="submit" class="text-sm text-red-700 hover:underline">{{ __('admin.delete') }}</button>
+                    <button type="submit" class="ssbc-admin-btn-danger">{{ __('admin.delete') }}</button>
                 </form>
             @endif
-            <button type="submit" class="ssbc-btn-primary">{{ __('admin.save') }}</button>
+            <button type="submit" class="ssbc-admin-btn-primary">{{ __('admin.save') }}</button>
         </div>
     </div>
 </form>

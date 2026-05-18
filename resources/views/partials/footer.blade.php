@@ -8,10 +8,9 @@
                    class="inline-block mb-1"
                    aria-label="{{ __('common.site_name') }}">
                     <img
-                        src="{{ asset('images/logos/logo-light.png') }}"
+                        src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
                         alt="{{ __('common.site_name') }}"
-                        class="h-12 w-auto"
-                        width="800" height="346"
+                        class="h-9 md:h-12 w-auto"
                         loading="lazy">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>

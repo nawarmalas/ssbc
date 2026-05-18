@@ -89,31 +89,104 @@
         @apply text-ssbc-gold hover:text-ssbc-gold/80 font-semibold;
     }
 
+    /* ── Admin panel ─────────────────────────────────────────────────── */
+
     .ssbc-admin-card {
-        @apply border border-ssbc-green/15 bg-white;
+        @apply border border-gray-200 bg-white;
     }
 
+    .ssbc-admin-label {
+        @apply block text-xs font-semibold uppercase tracking-wide text-ssbc-sage mb-1;
+    }
+
+    .ssbc-admin-input {
+        @apply block w-full border border-gray-300 bg-white px-3 py-2 text-sm text-ssbc-dark placeholder-gray-400 focus:border-ssbc-green focus:outline-none focus:ring-0;
+    }
+
+    .ssbc-admin-btn-primary {
+        @apply inline-flex items-center justify-center bg-ssbc-green text-white px-5 py-2 text-sm font-semibold hover:bg-ssbc-green/90 transition-colors;
+    }
+
+    .ssbc-admin-btn-danger {
+        @apply inline-flex items-center justify-center border border-red-300 text-red-600 px-5 py-2 text-sm hover:bg-red-50 transition-colors;
+    }
+
+    .ssbc-admin-thead {
+        @apply bg-ssbc-green text-white text-xs uppercase tracking-widest;
+    }
+
+    .ssbc-admin-row {
+        @apply bg-white hover:bg-ssbc-beige/40 border-b border-gray-100 transition-colors;
+    }
+
+    .ssbc-admin-stat-card {
+        @apply block bg-white border border-gray-200 p-6 hover:border-ssbc-gold transition-colors;
+    }
+
+    .ssbc-admin-stat-label {
+        @apply text-ssbc-sage text-xs uppercase tracking-widest font-semibold;
+    }
+
+    .ssbc-admin-stat-value {
+        @apply text-4xl font-display font-bold text-ssbc-green mt-2;
+    }
+
+    .ssbc-file-link {
+        @apply inline-flex items-center gap-2 border border-gray-300 px-3 py-2 text-sm text-ssbc-dark hover:bg-ssbc-beige/40 hover:border-ssbc-green transition-colors;
+    }
+
+    /* Pill-shaped status badges */
     .ssbc-status-badge {
-        @apply inline-flex items-center px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider border;
+        @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
     }
 
     .ssbc-status-new {
-        @apply text-ssbc-gold border-ssbc-gold/40 bg-ssbc-gold/10;
+        @apply bg-ssbc-gold/15 text-ssbc-gold;
     }
 
     .ssbc-status-reviewed {
-        @apply text-ssbc-sage border-ssbc-sage/40 bg-ssbc-sage/10;
+        @apply bg-blue-50 text-blue-600;
     }
 
-    .ssbc-status-contacted, .ssbc-status-approved, .ssbc-status-published {
-        @apply text-ssbc-green border-ssbc-green/40 bg-ssbc-green/10;
+    .ssbc-status-contacted {
+        @apply bg-purple-50 text-purple-600;
+    }
+
+    .ssbc-status-approved {
+        @apply bg-green-50 text-green-700;
     }
 
     .ssbc-status-rejected {
-        @apply text-red-700 border-red-300 bg-red-50;
+        @apply bg-red-50 text-red-600;
     }
 
     .ssbc-status-draft {
-        @apply text-ssbc-sage border-ssbc-sage/40 bg-ssbc-sage/10;
+        @apply bg-gray-100 text-gray-500;
+    }
+
+    .ssbc-status-published {
+        @apply bg-ssbc-green/10 text-ssbc-green;
+    }
+
+    /* Form-submission flow statuses */
+    .ssbc-status-pending {
+        @apply bg-ssbc-gold/15 text-ssbc-gold;
+    }
+
+    .ssbc-status-under_review {
+        @apply bg-blue-50 text-blue-600;
+    }
+
+    /* Sidebar nav */
+    .ssbc-nav-link {
+        @apply flex items-center justify-between px-4 py-2.5 text-sm text-white/70 border-l-2 border-transparent hover:text-white hover:bg-white/5 transition-colors;
+    }
+
+    .ssbc-nav-link-active {
+        @apply text-white bg-white/10 border-l-2 border-ssbc-gold;
+    }
+
+    .ssbc-nav-badge {
+        @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-ssbc-gold text-ssbc-green text-[10px] font-bold;
     }
 }

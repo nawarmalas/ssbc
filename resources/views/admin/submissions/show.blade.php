@@ -1,22 +1,22 @@
 @extends('layouts.admin')
 
 @section('title', 'Submission #' . $submission->id)
+@section('page_title', $submission->display_name ?? 'Submission #' . $submission->id)
 
 @section('content')
 <a href="{{ route('admin.submissions.index') }}" class="text-sm text-ssbc-sage hover:text-ssbc-green">← Back to Submissions</a>
 
-<div class="mt-4 w-12 h-px bg-ssbc-gold mb-4"></div>
-<div class="flex items-start justify-between mb-6">
+<div class="mt-4 flex flex-wrap items-start justify-between gap-3 mb-6">
     <div>
         <h1 class="text-2xl font-display font-bold text-ssbc-green">{{ $submission->display_name ?? 'Submission #' . $submission->id }}</h1>
-        <p class="text-sm text-ssbc-sage">Submitted {{ $submission->submitted_at->format('d M Y H:i') }} UTC · IP: {{ $submission->ip_address }}</p>
+        <p class="text-sm text-ssbc-sage mt-1">Submitted {{ $submission->submitted_at->format('d M Y H:i') }} UTC · IP: {{ $submission->ip_address }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ route('admin.submissions.pdf', $submission) }}" class="ssbc-btn-outline-dark text-sm">Download PDF</a>
+        <a href="{{ route('admin.submissions.pdf', $submission) }}" class="ssbc-admin-btn-primary">Download PDF</a>
         <form method="POST" action="{{ route('admin.submissions.destroy', $submission) }}"
               onsubmit="return confirm('Delete this submission permanently?')">
             @csrf @method('DELETE')
-            <button type="submit" class="text-sm text-red-600 hover:text-red-800 border border-red-300 px-3 py-2">Delete</button>
+            <button type="submit" class="ssbc-admin-btn-danger">Delete</button>
         </form>
     </div>
 </div>
@@ -40,15 +40,22 @@
                             <div @if($field->field_type === 'textarea') class="sm:col-span-2" @endif>
                                 <dt class="ssbc-eyebrow mb-1">{{ $field->label_en }}</dt>
                                 @if($field->field_type === 'file')
-                                    @foreach($submission->uploadsFor($field->id, $r) as $upload)
-                                        <dd class="text-sm">
-                                            <a href="{{ $upload->url() }}" target="_blank" download
-                                               class="ssbc-link-gold">{{ $upload->file_name }}</a>
-                                            <span class="text-ssbc-sage text-xs ml-1">({{ round($upload->file_size / 1024) }} KB)</span>
-                                        </dd>
-                                    @endforeach
+                                    @php $uploadsList = $submission->uploadsFor($field->id, $r); @endphp
+                                    @if($uploadsList->isEmpty())
+                                        <dd class="text-sm text-ssbc-sage italic">Not provided</dd>
+                                    @else
+                                        @foreach($uploadsList as $upload)
+                                            <dd class="text-sm mb-1">
+                                                <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" download class="ssbc-file-link">
+                                                    <span aria-hidden="true">📄</span>
+                                                    <span>{{ $upload->file_name }}</span>
+                                                    <span class="text-ssbc-sage text-xs">({{ round($upload->file_size / 1024) }} KB)</span>
+                                                </a>
+                                            </dd>
+                                        @endforeach
+                                    @endif
                                 @else
-                                    <dd class="text-sm text-ssbc-dark whitespace-pre-wrap">{{ $submission->answerFor($field->id, $r) ?? '—' }}</dd>
+                                    <dd class="text-sm text-ssbc-dark whitespace-pre-wrap">{{ $field->formatAnswer($submission->answerFor($field->id, $r)) }}</dd>
                                 @endif
                             </div>
                         @endforeach
@@ -60,17 +67,17 @@
 
     {{-- Sidebar: status + notes --}}
     <div class="space-y-4">
-        <form method="POST" action="{{ route('admin.submissions.update', $submission) }}" class="ssbc-admin-card p-5">
+        <form method="POST" action="{{ route('admin.submissions.update', $submission) }}" class="ssbc-admin-card p-6">
             @csrf @method('PATCH')
-            <h3 class="font-display font-bold text-ssbc-green mb-4">Status</h3>
-            <select name="status" class="ssbc-input mb-4 text-sm">
+            <label class="ssbc-admin-label">Status</label>
+            <select name="status" class="ssbc-admin-input mb-4">
                 @foreach(['pending','under_review','approved','rejected'] as $s)
                     <option value="{{ $s }}" @selected($submission->status === $s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>
                 @endforeach
             </select>
-            <h3 class="font-display font-bold text-ssbc-green mb-2">Admin Notes</h3>
-            <textarea name="admin_notes" rows="5" class="ssbc-input text-sm mb-4">{{ $submission->admin_notes }}</textarea>
-            <button type="submit" class="ssbc-btn-primary text-sm w-full">Save</button>
+            <label class="ssbc-admin-label">Admin Notes</label>
+            <textarea name="admin_notes" rows="6" class="ssbc-admin-input mb-4">{{ $submission->admin_notes }}</textarea>
+            <button type="submit" class="ssbc-admin-btn-primary w-full">Save</button>
         </form>
     </div>
 </div>

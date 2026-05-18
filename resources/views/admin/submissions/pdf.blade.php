@@ -35,11 +35,16 @@
                     <td>{{ $field->label_en }}</td>
                     <td>
                         @if($field->field_type === 'file')
-                            @foreach($submission->uploadsFor($field->id, $r) as $u)
-                                {{ $u->file_name }} ({{ round($u->file_size/1024) }} KB)
-                            @endforeach
+                            @php $list = $submission->uploadsFor($field->id, $r); @endphp
+                            @if($list->isEmpty())
+                                —
+                            @else
+                                @foreach($list as $u)
+                                    {{ $u->file_name }} ({{ round($u->file_size/1024) }} KB)<br>
+                                @endforeach
+                            @endif
                         @else
-                            {{ $submission->answerFor($field->id, $r) ?? '—' }}
+                            {{ $field->formatAnswer($submission->answerFor($field->id, $r)) }}
                         @endif
                     </td>
                 </tr>

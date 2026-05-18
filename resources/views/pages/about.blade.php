@@ -16,10 +16,9 @@
     <div class="ssbc-container py-20">
         <div class="flex justify-center mb-14">
             <img
-                src="{{ asset('images/logos/logo-light.png') }}"
+                src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
                 alt="{{ __('common.site_name') }}"
                 class="h-20 md:h-24 w-auto"
-                width="800" height="346"
                 loading="lazy">
         </div>
         <div class="ssbc-rule"></div>

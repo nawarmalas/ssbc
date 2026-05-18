@@ -9,64 +9,121 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen flex flex-col bg-ssbc-light">
+<body class="min-h-screen bg-ssbc-light" x-data="{ sidebarOpen: false }">
 
-    <header class="bg-ssbc-green text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
-                    <span class="font-display font-bold text-lg">{{ __('admin.title') }}</span>
-                    <span class="w-1 h-1 rounded-full bg-ssbc-gold"></span>
-                </a>
+@php
+    use App\Models\ContactSubmission;
+    use App\Models\JoinSubmission;
+    use App\Models\MembershipApplication;
+    use App\Models\FormSubmission;
+
+    $current = request()->route() ? request()->route()->getName() : '';
+
+    $unread = [
+        'join'        => JoinSubmission::where('status', 'new')->count(),
+        'contact'     => ContactSubmission::where('status', 'new')->count(),
+        'membership'  => MembershipApplication::where('status', 'new')->count(),
+        'submissions' => FormSubmission::where('status', 'pending')->count(),
+    ];
+
+    $nav = [
+        ['key' => 'dashboard',   'route' => 'admin.dashboard',         'label' => __('admin.dashboard'), 'badge' => null],
+        ['key' => 'news',        'route' => 'admin.news.index',        'label' => __('admin.news'),      'badge' => null],
+        ['key' => 'forms',       'route' => 'admin.forms.builder',     'label' => 'Form Builder',         'badge' => null],
+        ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => 'Submissions',          'badge' => $unread['submissions']],
+        ['key' => 'join',        'route' => 'admin.join.index',        'label' => __('admin.join'),       'badge' => $unread['join']],
+        ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),    'badge' => $unread['contact']],
+        ['key' => 'membership',  'route' => 'admin.membership.index',  'label' => __('admin.membership'), 'badge' => $unread['membership']],
+        ['key' => 'settings',    'route' => 'admin.settings.edit',     'label' => __('admin.settings'),   'badge' => null],
+    ];
+@endphp
+
+{{-- Mobile overlay --}}
+<div x-show="sidebarOpen" x-cloak
+     @click="sidebarOpen = false"
+     class="fixed inset-0 z-30 bg-black/40 lg:hidden"></div>
+
+{{-- Sidebar --}}
+<aside
+    class="fixed inset-y-0 left-0 z-40 w-56 bg-ssbc-green flex flex-col transform transition-transform duration-200
+           lg:translate-x-0"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+
+    <div class="h-16 flex items-center px-6 border-b border-white/10">
+        <a href="{{ route('admin.dashboard') }}" aria-label="{{ __('common.site_name') }}">
+            <img src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
+                 alt="{{ __('common.site_name') }}"
+                 class="h-8 w-auto"
+                 loading="eager">
+        </a>
+    </div>
+
+    <nav class="flex-1 py-4 overflow-y-auto">
+        @foreach($nav as $item)
+            @php
+                $isActive = str_starts_with($current, 'admin.' . $item['key']);
+            @endphp
+            <a href="{{ route($item['route']) }}"
+               class="ssbc-nav-link {{ $isActive ? 'ssbc-nav-link-active' : '' }}">
+                <span>{{ $item['label'] }}</span>
+                @if(!empty($item['badge']) && $item['badge'] > 0)
+                    <span class="ssbc-nav-badge">{{ $item['badge'] }}</span>
+                @endif
+            </a>
+        @endforeach
+    </nav>
+
+    <div class="px-6 py-4 border-t border-white/10 text-xs text-white/40">
+        v1.0
+    </div>
+</aside>
+
+{{-- Main column --}}
+<div class="lg:pl-56 flex flex-col min-h-screen">
+
+    {{-- Top bar --}}
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div class="h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <button type="button"
+                        @click="sidebarOpen = !sidebarOpen"
+                        class="lg:hidden text-ssbc-dark hover:text-ssbc-green p-1"
+                        aria-label="Toggle navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h1 class="text-base sm:text-lg font-display font-semibold text-ssbc-green truncate">
+                    @yield('page_title', __('admin.title'))
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-4">
+                @auth
+                    <span class="hidden sm:inline text-xs text-ssbc-sage">{{ auth()->user()->email }}</span>
+                @endauth
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
-                    <button type="submit" class="text-sm text-white/80 hover:text-ssbc-gold">{{ __('admin.logout') }}</button>
+                    <button type="submit"
+                            class="text-xs uppercase tracking-wider text-ssbc-sage hover:text-ssbc-green border border-gray-200 px-3 py-1.5">
+                        {{ __('admin.logout') }}
+                    </button>
                 </form>
             </div>
         </div>
-
-        <nav class="border-t border-white/10">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6 overflow-x-auto">
-                @php
-                    $tabs = [
-                        ['route' => 'admin.dashboard',       'label' => __('admin.dashboard')],
-                        ['route' => 'admin.news.index',      'label' => __('admin.news')],
-                        ['route' => 'admin.forms.builder',   'label' => 'Form Builder'],
-                        ['route' => 'admin.submissions.index', 'label' => 'Submissions'],
-                        ['route' => 'admin.join.index',      'label' => __('admin.join')],
-                        ['route' => 'admin.contact.index',   'label' => __('admin.contact')],
-                        ['route' => 'admin.membership.index','label' => __('admin.membership')],
-                        ['route' => 'admin.settings.edit',   'label' => __('admin.settings')],
-                    ];
-                    $current = request()->route() ? request()->route()->getName() : '';
-                @endphp
-                @foreach($tabs as $tab)
-                    @php
-                        $base = explode('.', $tab['route'])[1] ?? '';
-                        $active = str_starts_with($current, 'admin.' . $base);
-                    @endphp
-                    <a href="{{ route($tab['route']) }}"
-                       class="py-3 text-sm uppercase tracking-wider border-b-2 -mb-px
-                              {{ $active ? 'border-ssbc-gold text-ssbc-gold font-semibold' : 'border-transparent text-white/70 hover:text-white' }}">
-                        {{ $tab['label'] }}
-                    </a>
-                @endforeach
-            </div>
-        </nav>
     </header>
 
-    <main class="flex-1">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    {{-- Page content --}}
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+        @if (session('status'))
+            <div class="mb-6 border border-ssbc-green/30 bg-ssbc-green/5 px-4 py-3 text-sm text-ssbc-green">
+                {{ session('status') }}
+            </div>
+        @endif
 
-            @if (session('status'))
-                <div class="mb-6 border border-ssbc-green/30 bg-ssbc-green/5 px-4 py-3 text-sm text-ssbc-green">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            @yield('content')
-        </div>
+        @yield('content')
     </main>
+</div>
 
 </body>
 </html>

@@ -11,11 +11,11 @@
 
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
-            <div class="inline-flex items-center gap-2">
-                <span class="text-ssbc-green font-display font-bold text-2xl">{{ __('common.site_short') }}</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-ssbc-gold"></span>
-            </div>
-            <p class="mt-2 ssbc-eyebrow">{{ __('admin.login_heading') }}</p>
+            <img src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
+                 alt="{{ __('common.site_name') }}"
+                 class="h-12 w-auto mx-auto"
+                 loading="eager">
+            <p class="mt-3 ssbc-eyebrow">{{ __('admin.login_heading') }}</p>
         </div>
 
         <div class="border border-ssbc-green/15 bg-white p-8">
