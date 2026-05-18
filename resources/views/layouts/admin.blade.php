@@ -29,12 +29,14 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6 overflow-x-auto">
                 @php
                     $tabs = [
-                        ['route' => 'admin.dashboard', 'label' => __('admin.dashboard')],
-                        ['route' => 'admin.news.index', 'label' => __('admin.news')],
-                        ['route' => 'admin.join.index', 'label' => __('admin.join')],
-                        ['route' => 'admin.contact.index', 'label' => __('admin.contact')],
-                        ['route' => 'admin.membership.index', 'label' => __('admin.membership')],
-                        ['route' => 'admin.settings.edit', 'label' => __('admin.settings')],
+                        ['route' => 'admin.dashboard',       'label' => __('admin.dashboard')],
+                        ['route' => 'admin.news.index',      'label' => __('admin.news')],
+                        ['route' => 'admin.forms.builder',   'label' => 'Form Builder'],
+                        ['route' => 'admin.submissions.index', 'label' => 'Submissions'],
+                        ['route' => 'admin.join.index',      'label' => __('admin.join')],
+                        ['route' => 'admin.contact.index',   'label' => __('admin.contact')],
+                        ['route' => 'admin.membership.index','label' => __('admin.membership')],
+                        ['route' => 'admin.settings.edit',   'label' => __('admin.settings')],
                     ];
                     $current = request()->route() ? request()->route()->getName() : '';
                 @endphp

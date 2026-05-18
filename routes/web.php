@@ -3,10 +3,12 @@
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FormBuilderController;
 use App\Http\Controllers\Admin\JoinController as AdminJoinController;
 use App\Http\Controllers\Admin\MembershipController as AdminMembershipController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SubmissionController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
@@ -88,5 +90,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        // Form Builder
+        Route::get('/forms/join-us', [FormBuilderController::class, 'index'])->name('forms.builder');
+        Route::get('/forms/join-us/preview', [FormBuilderController::class, 'preview'])->name('forms.preview');
+        Route::post('/forms/join-us/sections', [FormBuilderController::class, 'storeSection'])->name('forms.sections.store');
+        Route::put('/forms/join-us/sections/{section}', [FormBuilderController::class, 'updateSection'])->name('forms.sections.update');
+        Route::delete('/forms/join-us/sections/{section}', [FormBuilderController::class, 'destroySection'])->name('forms.sections.destroy');
+        Route::post('/forms/join-us/sections/reorder', [FormBuilderController::class, 'reorderSections'])->name('forms.sections.reorder');
+        Route::post('/forms/join-us/fields', [FormBuilderController::class, 'storeField'])->name('forms.fields.store');
+        Route::put('/forms/join-us/fields/{field}', [FormBuilderController::class, 'updateField'])->name('forms.fields.update');
+        Route::delete('/forms/join-us/fields/{field}', [FormBuilderController::class, 'destroyField'])->name('forms.fields.destroy');
+        Route::post('/forms/join-us/fields/reorder', [FormBuilderController::class, 'reorderFields'])->name('forms.fields.reorder');
+
+        // Submissions — export MUST come before {submission} wildcard
+        Route::get('/submissions/export', [SubmissionController::class, 'export'])->name('submissions.export');
+        Route::get('/submissions', [SubmissionController::class, 'index'])->name('submissions.index');
+        Route::get('/submissions/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
+        Route::patch('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
+        Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])->name('submissions.destroy');
+        Route::get('/submissions/{submission}/pdf', [SubmissionController::class, 'pdf'])->name('submissions.pdf');
     });
 });
