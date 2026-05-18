@@ -16,9 +16,23 @@
     <div class="ssbc-container py-16">
         <div class="max-w-3xl mx-auto">
 
+            {{-- Institutional header --}}
+            <div class="flex flex-col items-center mb-12 text-center">
+                <img src="{{ asset('images/logos/logo-light.png') }}"
+                     alt="{{ __('common.site_name') }}"
+                     class="h-16 md:h-20 w-auto mb-4" width="800" height="346" loading="lazy">
+                <div class="w-16 h-px bg-ssbc-gold"></div>
+            </div>
+
+            @if(isset($preview) && $preview)
+                <div class="mb-8 bg-amber-50 border border-amber-300 px-4 py-3 text-sm text-amber-800 text-center">
+                    Preview Mode — this form cannot be submitted from here.
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800">
-                    <p class="font-semibold mb-2">{{ trans_choice('There is :count problem with the submission.|There are :count problems with the submission.', $errors->count(), ['count' => $errors->count()]) }}</p>
+                    <p class="font-semibold mb-2">Please correct the following errors:</p>
                     <ul class="list-disc list-inside space-y-1">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -27,196 +41,386 @@
                 </div>
             @endif
 
-            <form method="POST"
-                  action="{{ route('join.store', ['locale' => $locale]) }}"
-                  enctype="multipart/form-data"
-                  x-data="joinForm()"
-                  @submit="onSubmit($event)">
-                @csrf
+            <div x-data="dynamicForm({{ $form->toJson() }})" x-init="init()">
 
                 {{-- Step indicator --}}
                 <div class="flex items-center justify-between mb-10">
                     <p class="ssbc-eyebrow">
                         {{ __('join.steps.step') }}
-                        <span x-text="step"></span>
-                        {{ __('join.steps.of') }} 4
+                        <span x-text="step + 1"></span>
+                        {{ __('join.steps.of') }}
+                        <span x-text="sections.length"></span>
                     </p>
                     <div class="flex gap-2">
-                        <template x-for="i in 4" :key="i">
-                            <span class="h-1 w-10"
+                        <template x-for="(s, i) in sections" :key="i">
+                            <span class="h-1 w-10 transition-colors"
                                   :class="i <= step ? 'bg-ssbc-gold' : 'bg-ssbc-green/15'"></span>
                         </template>
                     </div>
                 </div>
 
-                {{-- STEP 1: Personal --}}
-                <div x-show="step === 1" x-cloak>
-                    <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2">
-                        {{ __('join.steps.1') }}
-                    </h2>
-                    <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
+                <form method="POST"
+                      action="{{ isset($preview) && $preview ? '#' : route('join.store', ['locale' => $locale]) }}"
+                      enctype="multipart/form-data"
+                      @submit.prevent="onSubmit">
+                    @csrf
 
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="ssbc-label" for="full_name_en">{{ __('join.fields.full_name_en') }}</label>
-                            <input id="full_name_en" name="full_name_en" type="text" required class="ssbc-input" value="{{ old('full_name_en') }}">
-                        </div>
-                        <div>
-                            <label class="ssbc-label" for="full_name_ar">{{ __('join.fields.full_name_ar') }}</label>
-                            <input id="full_name_ar" name="full_name_ar" type="text" required class="ssbc-input" dir="rtl" lang="ar" value="{{ old('full_name_ar') }}">
-                        </div>
-                        <div>
-                            <label class="ssbc-label" for="date_of_birth">{{ __('join.fields.date_of_birth') }}</label>
-                            <input id="date_of_birth" name="date_of_birth" type="date" required class="ssbc-input" value="{{ old('date_of_birth') }}">
-                        </div>
-                        <div>
-                            <label class="ssbc-label" for="position">{{ __('join.fields.position') }}</label>
-                            <input id="position" name="position" type="text" required class="ssbc-input" value="{{ old('position') }}">
-                        </div>
-                        <div>
-                            <label class="ssbc-label" for="mobile">{{ __('join.fields.mobile') }}</label>
-                            <input id="mobile" name="mobile" type="tel" required class="ssbc-input" value="{{ old('mobile') }}">
-                        </div>
-                        <div>
-                            <label class="ssbc-label" for="email">{{ __('join.fields.email') }}</label>
-                            <input id="email" name="email" type="email" required class="ssbc-input" value="{{ old('email') }}">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="ssbc-label" for="home_address">{{ __('join.fields.home_address') }} <span class="text-ssbc-sage normal-case font-normal">({{ __('common.optional') }})</span></label>
-                            <textarea id="home_address" name="home_address" rows="2" class="ssbc-input">{{ old('home_address') }}</textarea>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="ssbc-label" for="linked_in">{{ __('join.fields.linked_in') }} <span class="text-ssbc-sage normal-case font-normal">({{ __('common.optional') }})</span></label>
-                            <input id="linked_in" name="linked_in" type="url" class="ssbc-input" placeholder="https://" value="{{ old('linked_in') }}">
-                        </div>
-                    </div>
-                </div>
+                    {{-- Hidden _repeats fields --}}
+                    <template x-for="(count, sectionId) in repeats" :key="sectionId">
+                        <input type="hidden" :name="'_repeats[' + sectionId + ']'" :value="count">
+                    </template>
 
-                {{-- STEP 2: Companies --}}
-                <div x-show="step === 2" x-cloak>
-                    <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2">{{ __('join.steps.2') }}</h2>
-                    <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
+                    {{-- Current section --}}
+                    <template x-if="currentSection">
+                        <div>
+                            <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2"
+                                x-text="locale === 'ar' ? currentSection.title_ar : currentSection.title_en"></h2>
+                            <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
 
-                    <template x-for="(company, idx) in companies" :key="idx">
-                        <div class="border border-ssbc-green/15 p-6 mb-6 relative">
-                            <div class="flex items-center justify-between mb-4">
-                                <p class="ssbc-eyebrow">#<span x-text="idx + 1"></span></p>
-                                <button type="button" class="text-sm text-red-700 hover:underline"
-                                        x-show="companies.length > 1"
-                                        @click="companies.splice(idx, 1)">{{ __('join.remove') }}</button>
-                            </div>
+                            {{-- Repeatable section tabs --}}
+                            <template x-if="currentSection.is_repeatable">
+                                <div>
+                                    <div class="flex gap-2 flex-wrap mb-6">
+                                        <template x-for="r in repeatCount" :key="r">
+                                            <button type="button"
+                                                    @click="activeRepeat = r - 1"
+                                                    :class="activeRepeat === r - 1
+                                                        ? 'bg-ssbc-gold text-ssbc-green border-ssbc-gold'
+                                                        : 'bg-white text-ssbc-sage border-ssbc-green/20'"
+                                                    class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors">
+                                                <span x-text="(locale === 'ar' ? currentSection.title_ar : currentSection.title_en) + ' ' + r"></span>
+                                            </button>
+                                        </template>
+                                        <button type="button"
+                                                x-show="repeatCount < currentSection.max_repeats"
+                                                @click="addRepeat()"
+                                                class="px-4 py-1.5 rounded-full text-sm border border-dashed border-ssbc-gold text-ssbc-gold">
+                                            + Add another
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
 
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="ssbc-label">{{ __('join.fields.company_name') }}</label>
-                                    <input type="text" required class="ssbc-input"
-                                           :name="`companies[${idx}][name]`" x-model="company.name">
-                                </div>
-                                <div>
-                                    <label class="ssbc-label">{{ __('join.fields.registration_number') }}</label>
-                                    <input type="text" required class="ssbc-input"
-                                           :name="`companies[${idx}][registration_number]`" x-model="company.registration_number">
-                                </div>
-                                <div>
-                                    <label class="ssbc-label">{{ __('join.fields.country') }}</label>
-                                    <input type="text" required class="ssbc-input"
-                                           :name="`companies[${idx}][country]`" x-model="company.country">
-                                </div>
-                                <div>
-                                    <label class="ssbc-label">{{ __('join.fields.sector') }}</label>
-                                    <select required class="ssbc-input"
-                                            :name="`companies[${idx}][sector]`" x-model="company.sector">
-                                        <option value="">{{ __('join.sectors.select') }}</option>
-                                        @foreach($sectors as $s)
-                                            <option value="{{ $s }}">{{ __('join.sectors.'.$s) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                            {{-- Fields --}}
+                            <div class="space-y-6">
+                                <template x-for="field in currentSection.fields" :key="field.id">
+                                    <div>
+                                        {{-- Label --}}
+                                        <label class="ssbc-label" :for="'f_' + field.id + '_' + activeRepeat">
+                                            <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
+                                            <span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
+                                        </label>
+
+                                        {{-- text / email / tel / number / url --}}
+                                        <template x-if="['text','email','tel','number','url'].includes(field.field_type)">
+                                            <input
+                                                :id="'f_' + field.id + '_' + activeRepeat"
+                                                :type="field.field_type"
+                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
+                                                :required="field.is_required && activeRepeat === 0"
+                                                x-model="answers[field.id + '_' + activeRepeat]"
+                                                class="ssbc-input"
+                                            >
+                                        </template>
+
+                                        {{-- textarea --}}
+                                        <template x-if="field.field_type === 'textarea'">
+                                            <textarea
+                                                :id="'f_' + field.id + '_' + activeRepeat"
+                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
+                                                :required="field.is_required && activeRepeat === 0"
+                                                x-model="answers[field.id + '_' + activeRepeat]"
+                                                rows="3"
+                                                class="ssbc-input"
+                                            ></textarea>
+                                        </template>
+
+                                        {{-- date --}}
+                                        <template x-if="field.field_type === 'date'">
+                                            <input
+                                                :id="'f_' + field.id + '_' + activeRepeat"
+                                                type="date"
+                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                :required="field.is_required && activeRepeat === 0"
+                                                x-model="answers[field.id + '_' + activeRepeat]"
+                                                class="ssbc-input"
+                                            >
+                                        </template>
+
+                                        {{-- select --}}
+                                        <template x-if="field.field_type === 'select'">
+                                            <select
+                                                :id="'f_' + field.id + '_' + activeRepeat"
+                                                :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                :required="field.is_required && activeRepeat === 0"
+                                                x-model="answers[field.id + '_' + activeRepeat]"
+                                                class="ssbc-input"
+                                            >
+                                                <option value="">— Select —</option>
+                                                <template x-for="opt in (field.options || [])" :key="opt.value">
+                                                    <option :value="opt.value"
+                                                            x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+
+                                        {{-- radio --}}
+                                        <template x-if="field.field_type === 'radio'">
+                                            <div class="flex flex-wrap gap-4 mt-1">
+                                                <template x-for="opt in (field.options || [])" :key="opt.value">
+                                                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                                        <input type="radio"
+                                                               :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                               :value="opt.value"
+                                                               x-model="answers[field.id + '_' + activeRepeat]"
+                                                               class="text-ssbc-gold focus:ring-ssbc-gold">
+                                                        <span x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></span>
+                                                    </label>
+                                                </template>
+                                            </div>
+                                        </template>
+
+                                        {{-- checkbox_group --}}
+                                        <template x-if="field.field_type === 'checkbox_group'">
+                                            <div>
+                                                <div class="grid sm:grid-cols-2 gap-2 mt-1">
+                                                    <template x-for="opt in (field.options || [])" :key="opt.value">
+                                                        <label class="flex items-start gap-2 cursor-pointer text-sm p-2 hover:bg-ssbc-beige/40 rounded transition-colors">
+                                                            <input type="checkbox"
+                                                                   :value="opt.value"
+                                                                   :checked="(checkboxAnswers[field.id + '_' + activeRepeat] || []).includes(opt.value)"
+                                                                   @change="toggleCheckbox(field.id, activeRepeat, opt.value)"
+                                                                   class="mt-0.5 shrink-0 text-ssbc-gold focus:ring-ssbc-gold">
+                                                            <span x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></span>
+                                                        </label>
+                                                    </template>
+                                                </div>
+                                                {{-- Hidden serialized value --}}
+                                                <input type="hidden"
+                                                       :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                       :value="JSON.stringify(checkboxAnswers[field.id + '_' + activeRepeat] || [])">
+                                            </div>
+                                        </template>
+
+                                        {{-- file --}}
+                                        <template x-if="field.field_type === 'file'">
+                                            <div>
+                                                <div class="border-2 border-dashed border-ssbc-green/20 p-6 text-center hover:border-ssbc-gold transition-colors relative"
+                                                     @dragover.prevent
+                                                     @drop.prevent="handleFileDrop(field, activeRepeat, $event)">
+                                                    <input type="file"
+                                                           :id="'f_' + field.id + '_' + activeRepeat"
+                                                           :name="'files[' + field.id + '][' + activeRepeat + ']'"
+                                                           :accept="'.' + (field.file_config?.accepted_types || ['pdf']).join(',.')"
+                                                           :required="field.is_required && activeRepeat === 0"
+                                                           @change="handleFileSelect(field, activeRepeat, $event)"
+                                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                                    <div x-show="!fileNames[field.id + '_' + activeRepeat]">
+                                                        <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
+                                                        <p class="text-xs text-ssbc-sage/70 mt-1"
+                                                           x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 5) + ' MB'"></p>
+                                                    </div>
+                                                    <div x-show="fileNames[field.id + '_' + activeRepeat]"
+                                                         class="flex items-center justify-center gap-2">
+                                                        <span class="text-sm text-ssbc-green font-semibold"
+                                                              x-text="fileNames[field.id + '_' + activeRepeat]"></span>
+                                                        <span class="text-xs text-ssbc-sage">✓</span>
+                                                    </div>
+                                                </div>
+                                                <p x-show="fileErrors[field.id + '_' + activeRepeat]"
+                                                   x-text="fileErrors[field.id + '_' + activeRepeat]"
+                                                   class="text-red-500 text-xs mt-1"></p>
+                                            </div>
+                                        </template>
+
+                                        {{-- declaration --}}
+                                        <template x-if="field.field_type === 'declaration'">
+                                            <div class="border border-ssbc-green/15 bg-ssbc-beige/50 p-6">
+                                                <label class="flex items-start gap-3 cursor-pointer">
+                                                    <input type="checkbox"
+                                                           :name="'answers[' + field.id + '][' + activeRepeat + ']'"
+                                                           value="1"
+                                                           :required="field.is_required"
+                                                           x-model="answers[field.id + '_' + activeRepeat]"
+                                                           class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
+                                                    <span class="text-sm text-ssbc-dark leading-relaxed"
+                                                          x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
+                                                </label>
+                                            </div>
+                                        </template>
+
+                                        {{-- Field error --}}
+                                        <p x-show="stepErrors[field.id + '_' + activeRepeat]"
+                                           x-text="stepErrors[field.id + '_' + activeRepeat]"
+                                           class="text-red-500 text-xs mt-1"></p>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
 
-                    <button type="button" class="ssbc-link-gold text-sm"
-                            @click="companies.push({name:'',registration_number:'',country:'',sector:''})">
-                        {{ __('join.add_company') }}
-                    </button>
-                </div>
+                    {{-- Navigation --}}
+                    <div class="mt-12 flex items-center justify-between border-t border-ssbc-green/15 pt-6">
+                        <button type="button" class="ssbc-btn-outline-dark"
+                                x-show="step > 0" @click="prevStep()">
+                            ← {{ __('common.previous') }}
+                        </button>
+                        <span x-show="step === 0"></span>
 
-                {{-- STEP 3: Documents --}}
-                <div x-show="step === 3" x-cloak>
-                    <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2">{{ __('join.steps.3') }}</h2>
-                    <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
+                        <button type="button" class="ssbc-btn-primary"
+                                x-show="step < sections.length - 1"
+                                @click="nextStep()">
+                            {{ __('common.next') }} →
+                        </button>
 
-                    <div class="space-y-6">
-                        <div>
-                            <label class="ssbc-label" for="id_document">{{ __('join.fields.id_document') }}</label>
-                            <input id="id_document" name="id_document" type="file" required
-                                   accept=".jpg,.jpeg,.png,.pdf" class="ssbc-input bg-ssbc-light">
-                        </div>
-
-                        <div>
-                            <label class="ssbc-label">{{ __('join.fields.company_documents') }}</label>
-                            <input name="company_documents[]" type="file" required multiple
-                                   accept=".pdf,.doc,.docx" class="ssbc-input bg-ssbc-light">
-                        </div>
-
-                        <div>
-                            <label class="ssbc-label" for="company_profile">
-                                {{ __('join.fields.company_profile') }}
-                                <span class="text-ssbc-sage normal-case font-normal">({{ __('common.optional') }})</span>
-                            </label>
-                            <input id="company_profile" name="company_profile" type="file"
-                                   accept=".pdf" class="ssbc-input bg-ssbc-light">
-                        </div>
+                        @if(!(isset($preview) && $preview))
+                        <button type="submit" class="ssbc-btn-primary"
+                                x-show="step === sections.length - 1">
+                            {{ __('join.submit') }}
+                        </button>
+                        @endif
                     </div>
-                </div>
-
-                {{-- STEP 4: Declaration --}}
-                <div x-show="step === 4" x-cloak>
-                    <h2 class="text-2xl font-display font-bold text-ssbc-green mb-2">{{ __('join.steps.4') }}</h2>
-                    <div class="w-12 h-px bg-ssbc-gold mb-8"></div>
-
-                    <div class="border border-ssbc-green/15 bg-ssbc-beige/50 p-6">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <input type="checkbox" name="declaration" value="1" required class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
-                            <span class="text-sm text-ssbc-dark leading-relaxed">{{ __('join.declaration') }}</span>
-                        </label>
-                    </div>
-                </div>
-
-                {{-- Nav buttons --}}
-                <div class="mt-12 flex items-center justify-between border-t border-ssbc-green/15 pt-6">
-                    <button type="button" class="ssbc-btn-outline-dark"
-                            x-show="step > 1"
-                            @click="step--">
-                        ← {{ __('common.previous') }}
-                    </button>
-                    <span x-show="step === 1"></span>
-
-                    <button type="button" class="ssbc-btn-primary"
-                            x-show="step < 4"
-                            @click="step++">
-                        {{ __('common.next') }} →
-                    </button>
-
-                    <button type="submit" class="ssbc-btn-primary"
-                            x-show="step === 4">
-                        {{ __('join.submit') }}
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </section>
 
 <script>
-function joinForm() {
+function dynamicForm(sectionsJson) {
+    const sections = sectionsJson;
+    const locale = document.documentElement.lang || 'en';
+
     return {
-        step: 1,
-        companies: [{name:'', registration_number:'', country:'', sector:''}],
-        onSubmit(e) {
-            // Allow default form post; Alpine doesn't interfere.
-        }
+        sections,
+        locale,
+        step: 0,
+        activeRepeat: 0,
+        answers: {},
+        checkboxAnswers: {},
+        repeats: {},
+        fileNames: {},
+        fileErrors: {},
+        stepErrors: {},
+
+        init() {
+            sections.forEach(s => {
+                if (s.is_repeatable) this.repeats[s.id] = 1;
+            });
+        },
+
+        get currentSection() {
+            return this.sections[this.step] || null;
+        },
+
+        get repeatCount() {
+            if (!this.currentSection?.is_repeatable) return 1;
+            return this.repeats[this.currentSection.id] || 1;
+        },
+
+        addRepeat() {
+            const s = this.currentSection;
+            if (!s?.is_repeatable) return;
+            const current = this.repeats[s.id] || 1;
+            if (current < s.max_repeats) {
+                this.repeats[s.id] = current + 1;
+                this.activeRepeat = current;
+            }
+        },
+
+        toggleCheckbox(fieldId, repeatIndex, value) {
+            const key = fieldId + '_' + repeatIndex;
+            const current = this.checkboxAnswers[key] || [];
+            if (current.includes(value)) {
+                this.checkboxAnswers[key] = current.filter(v => v !== value);
+            } else {
+                this.checkboxAnswers[key] = [...current, value];
+            }
+        },
+
+        handleFileSelect(field, repeatIndex, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            this.validateAndSetFile(field, repeatIndex, file);
+        },
+
+        handleFileDrop(field, repeatIndex, event) {
+            const file = event.dataTransfer.files[0];
+            if (!file) return;
+            this.validateAndSetFile(field, repeatIndex, file);
+        },
+
+        validateAndSetFile(field, repeatIndex, file) {
+            const key = field.id + '_' + repeatIndex;
+            const maxBytes = (field.file_config?.max_size_mb || 5) * 1024 * 1024;
+            const accepted = (field.file_config?.accepted_types || ['pdf']).map(t => '.' + t);
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!accepted.includes(ext)) {
+                this.fileErrors[key] = 'File type not accepted. Allowed: ' + accepted.join(', ');
+                this.fileNames[key] = null;
+                return;
+            }
+            if (file.size > maxBytes) {
+                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 5) + ' MB.';
+                this.fileNames[key] = null;
+                return;
+            }
+            this.fileErrors[key] = null;
+            this.fileNames[key] = file.name;
+        },
+
+        validateCurrentStep() {
+            const s = this.currentSection;
+            if (!s) return true;
+            const count = s.is_repeatable ? (this.repeats[s.id] || 1) : 1;
+            let valid = true;
+            this.stepErrors = {};
+
+            for (const field of s.fields) {
+                if (!field.is_required) continue;
+                for (let r = 0; r < count; r++) {
+                    if (r > 0 && !s.is_repeatable) break;
+                    const key = field.id + '_' + r;
+
+                    if (field.field_type === 'checkbox_group') {
+                        if (!(this.checkboxAnswers[key]?.length)) {
+                            if (r === 0) { this.stepErrors[key] = 'Please select at least one option.'; valid = false; }
+                        }
+                    } else if (field.field_type === 'file') {
+                        if (!this.fileNames[key] && r === 0) {
+                            this.stepErrors[key] = 'This file is required.'; valid = false;
+                        }
+                    } else if (field.field_type !== 'declaration') {
+                        const val = this.answers[key];
+                        if (!val || val === '') {
+                            if (r === 0) { this.stepErrors[key] = 'This field is required.'; valid = false; }
+                        }
+                    }
+                }
+            }
+            return valid;
+        },
+
+        nextStep() {
+            if (!this.validateCurrentStep()) return;
+            this.step++;
+            this.activeRepeat = 0;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        prevStep() {
+            this.step--;
+            this.activeRepeat = 0;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        onSubmit(event) {
+            if (!this.validateCurrentStep()) { event.preventDefault(); return; }
+            event.target.submit();
+        },
     };
 }
 </script>
