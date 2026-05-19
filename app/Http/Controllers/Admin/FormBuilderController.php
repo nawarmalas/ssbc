@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FormField;
+use App\Models\FormDefinition;
 use App\Models\FormSection;
 use App\Services\FormService;
 use Illuminate\Http\JsonResponse;
@@ -12,8 +13,6 @@ use Illuminate\Validation\Rule;
 
 class FormBuilderController extends Controller
 {
-    private const FORM_ID = 'join-us';
-
     private const FIELD_TYPES = [
         'text', 'textarea', 'email', 'tel', 'number', 'date',
         'select', 'radio', 'checkbox_group', 'file', 'url', 'declaration',
@@ -21,28 +20,34 @@ class FormBuilderController extends Controller
 
     // ── Index ────────────────────────────────────────────────────────────────
 
-    public function index()
+    public function index(FormDefinition $formDefinition)
     {
         $sections = FormSection::with('allFields')
-            ->where('form_id', self::FORM_ID)
+            ->where('form_id', $formDefinition->form_id)
             ->orderBy('order_index')
             ->get();
 
         return view('admin.form-builder.index', [
             'sectionsJson' => $sections->toJson(),
             'fieldTypes'   => self::FIELD_TYPES,
+            'formDefinition' => $formDefinition,
         ]);
     }
 
-    public function preview()
+    public function preview(FormDefinition $formDefinition)
     {
-        $form = FormService::getActiveForm(self::FORM_ID);
-        return view('join.create', ['form' => $form, 'preview' => true]);
+        $form = FormService::getActiveForm($formDefinition->form_id);
+
+        return view('join.create', [
+            'form' => $form,
+            'formDefinition' => $formDefinition,
+            'preview' => true,
+        ]);
     }
 
     // ── Sections ─────────────────────────────────────────────────────────────
 
-    public function storeSection(Request $request): JsonResponse
+    public function storeSection(Request $request, FormDefinition $formDefinition): JsonResponse
     {
         $data = $request->validate([
             'title_en'      => ['required', 'string', 'max:255'],
@@ -51,20 +56,22 @@ class FormBuilderController extends Controller
             'max_repeats'   => ['integer', 'min:2', 'max:10'],
         ]);
 
-        $maxOrder = FormSection::where('form_id', self::FORM_ID)->max('order_index') ?? -1;
+        $maxOrder = FormSection::where('form_id', $formDefinition->form_id)->max('order_index') ?? -1;
 
         $section = FormSection::create(array_merge($data, [
-            'form_id'     => self::FORM_ID,
+            'form_id'     => $formDefinition->form_id,
             'order_index' => $maxOrder + 1,
         ]));
 
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true, 'data' => $section]);
     }
 
-    public function updateSection(Request $request, FormSection $section): JsonResponse
+    public function updateSection(Request $request, FormDefinition $formDefinition, FormSection $section): JsonResponse
     {
+        $this->ensureSectionBelongsToForm($section, $formDefinition);
+
         $data = $request->validate([
             'title_en'      => ['required', 'string', 'max:255'],
             'title_ar'      => ['required', 'string', 'max:255'],
@@ -73,13 +80,15 @@ class FormBuilderController extends Controller
         ]);
 
         $section->update($data);
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true, 'data' => $section]);
     }
 
-    public function destroySection(Request $request, FormSection $section): JsonResponse
+    public function destroySection(Request $request, FormDefinition $formDefinition, FormSection $section): JsonResponse
     {
+        $this->ensureSectionBelongsToForm($section, $formDefinition);
+
         $fieldCount = $section->allFields()->count();
 
         if ($fieldCount > 0 && ! $request->boolean('force')) {
@@ -87,12 +96,12 @@ class FormBuilderController extends Controller
         }
 
         $section->delete();
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true]);
     }
 
-    public function reorderSections(Request $request): JsonResponse
+    public function reorderSections(Request $request, FormDefinition $formDefinition): JsonResponse
     {
         $items = $request->validate([
             'items'               => ['required', 'array'],
@@ -101,47 +110,58 @@ class FormBuilderController extends Controller
         ])['items'];
 
         foreach ($items as $item) {
-            FormSection::where('id', $item['id'])->update(['order_index' => $item['order_index']]);
+            FormSection::where('form_id', $formDefinition->form_id)
+                ->where('id', $item['id'])
+                ->update(['order_index' => $item['order_index']]);
         }
 
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true]);
     }
 
     // ── Fields ───────────────────────────────────────────────────────────────
 
-    public function storeField(Request $request): JsonResponse
+    public function storeField(Request $request, FormDefinition $formDefinition): JsonResponse
     {
         $data = $this->validateField($request);
+        $section = FormSection::findOrFail($data['section_id']);
+        $this->ensureSectionBelongsToForm($section, $formDefinition);
 
         $maxOrder = FormField::where('section_id', $data['section_id'])->max('order_index') ?? -1;
         $data['order_index'] = $maxOrder + 1;
 
         $field = FormField::create($data);
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true, 'data' => $field]);
     }
 
-    public function updateField(Request $request, FormField $field): JsonResponse
+    public function updateField(Request $request, FormDefinition $formDefinition, FormField $field): JsonResponse
     {
+        $this->ensureFieldBelongsToForm($field, $formDefinition);
+
         $data = $this->validateField($request, $field);
+        $section = FormSection::findOrFail($data['section_id']);
+        $this->ensureSectionBelongsToForm($section, $formDefinition);
+
         $field->update($data);
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true, 'data' => $field->fresh()]);
     }
 
-    public function destroyField(FormField $field): JsonResponse
+    public function destroyField(FormDefinition $formDefinition, FormField $field): JsonResponse
     {
+        $this->ensureFieldBelongsToForm($field, $formDefinition);
+
         $field->delete();
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true]);
     }
 
-    public function reorderFields(Request $request): JsonResponse
+    public function reorderFields(Request $request, FormDefinition $formDefinition): JsonResponse
     {
         $items = $request->validate([
             'items'               => ['required', 'array'],
@@ -150,10 +170,12 @@ class FormBuilderController extends Controller
         ])['items'];
 
         foreach ($items as $item) {
-            FormField::where('id', $item['id'])->update(['order_index' => $item['order_index']]);
+            FormField::whereHas('section', fn ($query) => $query->where('form_id', $formDefinition->form_id))
+                ->where('id', $item['id'])
+                ->update(['order_index' => $item['order_index']]);
         }
 
-        FormService::invalidateCache();
+        FormService::invalidateCache($formDefinition->form_id);
 
         return response()->json(['success' => true]);
     }
@@ -188,5 +210,16 @@ class FormBuilderController extends Controller
         }
 
         return $data;
+    }
+
+    private function ensureSectionBelongsToForm(FormSection $section, FormDefinition $formDefinition): void
+    {
+        abort_unless($section->form_id === $formDefinition->form_id, 404);
+    }
+
+    private function ensureFieldBelongsToForm(FormField $field, FormDefinition $formDefinition): void
+    {
+        $field->loadMissing('section');
+        abort_unless($field->section?->form_id === $formDefinition->form_id, 404);
     }
 }

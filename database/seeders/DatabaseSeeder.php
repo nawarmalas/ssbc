@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\FormDefinition;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,6 +18,20 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'SSBC Admin',
                 'password' => Hash::make('Admin1234!'),
+                'role' => User::ROLE_ADMIN,
+                'is_active' => true,
+            ]
+        );
+
+        FormDefinition::updateOrCreate(
+            ['form_id' => 'join-us'],
+            [
+                'slug' => 'join-us',
+                'title_en' => 'Join Us',
+                'title_ar' => 'انضم إلينا',
+                'visibility' => FormDefinition::VISIBILITY_PUBLIC,
+                'access_token' => null,
+                'is_active' => true,
             ]
         );
 

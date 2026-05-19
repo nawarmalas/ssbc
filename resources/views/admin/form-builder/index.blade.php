@@ -7,7 +7,7 @@
 <div class="flex items-center justify-between mb-8">
     <h1 class="text-2xl font-display font-bold text-ssbc-green">Form Builder — Join Us</h1>
     <div class="flex gap-3">
-        <a href="{{ route('admin.forms.preview') }}" target="_blank"
+        <a href="{{ route('admin.forms.preview', $formDefinition) }}" target="_blank"
            class="ssbc-btn-outline-dark text-sm">Preview Form ↗</a>
     </div>
 </div>
@@ -261,6 +261,12 @@ function formBuilder() {
         confirmModal: { open: false, message: '', warning: '', action: () => {} },
 
         csrf: document.querySelector('meta[name="csrf-token"]').content,
+        endpoints: {
+            sections: @json(route('admin.forms.sections.store', $formDefinition)),
+            reorderSections: @json(route('admin.forms.sections.reorder', $formDefinition)),
+            fields: @json(route('admin.forms.fields.store', $formDefinition)),
+            reorderFields: @json(route('admin.forms.fields.reorder', $formDefinition)),
+        },
 
         init() {
             this.openSections = this.sections.length ? [this.sections[0].id] : [];
@@ -308,8 +314,8 @@ function formBuilder() {
         async saveSection() {
             this.saving = true;
             const url = this.editingSection
-                ? `/admin/forms/join-us/sections/${this.editingSection.id}`
-                : '/admin/forms/join-us/sections';
+                ? `${this.endpoints.sections}/${this.editingSection.id}`
+                : this.endpoints.sections;
             const method = this.editingSection ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -343,7 +349,7 @@ function formBuilder() {
 
         async deleteSection(section) {
             this.confirmModal.open = false;
-            const res = await fetch(`/admin/forms/join-us/sections/${section.id}?force=1`, {
+            const res = await fetch(`${this.endpoints.sections}/${section.id}?force=1`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': this.csrf },
             }).then(r => r.json());
@@ -358,7 +364,7 @@ function formBuilder() {
                 id: parseInt(el.dataset.id),
                 order_index: i,
             }));
-            await fetch('/admin/forms/join-us/sections/reorder', {
+            await fetch(this.endpoints.reorderSections, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
                 body: JSON.stringify({ items }),
@@ -406,8 +412,8 @@ function formBuilder() {
         async saveField() {
             this.saving = true;
             const url = this.editingField
-                ? `/admin/forms/join-us/fields/${this.editingField.id}`
-                : '/admin/forms/join-us/fields';
+                ? `${this.endpoints.fields}/${this.editingField.id}`
+                : this.endpoints.fields;
             const method = this.editingField ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -443,7 +449,7 @@ function formBuilder() {
 
         async deleteField(field, section) {
             this.confirmModal.open = false;
-            const res = await fetch(`/admin/forms/join-us/fields/${field.id}`, {
+            const res = await fetch(`${this.endpoints.fields}/${field.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': this.csrf },
             }).then(r => r.json());
@@ -460,7 +466,7 @@ function formBuilder() {
                 id: parseInt(div.dataset.id),
                 order_index: i,
             }));
-            await fetch('/admin/forms/join-us/fields/reorder', {
+            await fetch(this.endpoints.reorderFields, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
                 body: JSON.stringify({ items }),

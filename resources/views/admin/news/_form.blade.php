@@ -1,6 +1,7 @@
 @php
     $isEdit = isset($post) && $post->exists;
     $action = $isEdit ? route('admin.news.update', $post) : route('admin.news.store');
+    $isNewsSubadmin = auth()->user()?->isNewsSubadmin();
 @endphp
 
 @if ($errors->any())
@@ -63,20 +64,30 @@
                    value="{{ old('category', $post->category) }}">
         </div>
 
-        <div>
-            <label class="ssbc-admin-label" for="status">{{ __('admin.status') }}</label>
-            <select id="status" name="status" required class="ssbc-admin-input">
-                @foreach(['draft','published'] as $s)
-                    <option value="{{ $s }}" @selected(old('status', $post->status) === $s)>{{ __('admin.status_'.$s) }}</option>
-                @endforeach
-            </select>
-        </div>
+        @if($isNewsSubadmin)
+            <input type="hidden" name="status" value="draft">
+            <div class="md:col-span-2">
+                <label class="ssbc-admin-label">{{ __('admin.status') }}</label>
+                <div class="border border-ssbc-green/15 bg-ssbc-green/5 px-3 py-2 text-sm text-ssbc-green">
+                    Draft. A main admin must publish this before it appears on the public site.
+                </div>
+            </div>
+        @else
+            <div>
+                <label class="ssbc-admin-label" for="status">{{ __('admin.status') }}</label>
+                <select id="status" name="status" required class="ssbc-admin-input">
+                    @foreach(['draft','published'] as $s)
+                        <option value="{{ $s }}" @selected(old('status', $post->status) === $s)>{{ __('admin.status_'.$s) }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-        <div>
-            <label class="ssbc-admin-label" for="published_at">{{ __('admin.news_published_at') }}</label>
-            <input id="published_at" name="published_at" type="datetime-local" class="ssbc-admin-input"
-                   value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
-        </div>
+            <div>
+                <label class="ssbc-admin-label" for="published_at">{{ __('admin.news_published_at') }}</label>
+                <input id="published_at" name="published_at" type="datetime-local" class="ssbc-admin-input"
+                       value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
+            </div>
+        @endif
     </div>
 
     {{-- Featured image --}}
@@ -94,7 +105,7 @@
         <a href="{{ route('admin.news.index') }}" class="text-sm text-ssbc-sage hover:text-ssbc-green">← Back to list</a>
 
         <div class="flex items-center gap-3">
-            @if($isEdit)
+            @if($isEdit && (! $isNewsSubadmin || $post->status === 'draft'))
                 @include('partials.admin.confirm-delete', [
                     'action'  => route('admin.news.destroy', $post),
                     'title'   => __('admin.confirm_delete'),

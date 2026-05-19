@@ -1,15 +1,26 @@
 @extends('layouts.app')
 
-@php $locale = app()->getLocale(); @endphp
+@php
+    $locale = app()->getLocale();
+    $pageTitle = isset($formDefinition) ? $formDefinition->title($locale) : __('join.hero.heading');
+    $pageIntro = isset($formDefinition)
+        ? ($locale === 'ar'
+            ? ($formDefinition->description_ar ?: $formDefinition->description_en ?: __('join.intro'))
+            : ($formDefinition->description_en ?: $formDefinition->description_ar ?: __('join.intro')))
+        : __('join.intro');
+    $submitAction = $formAction ?? route('join.store', ['locale' => $locale]);
+@endphp
 
 @section('title', __('join.hero.heading') . ' — ' . __('common.site_name'))
+
+@section('title', $pageTitle . ' - ' . __('common.site_name'))
 
 @section('content')
 
 @include('partials.page-hero', [
     'eyebrow' => __('join.hero.eyebrow'),
-    'heading' => __('join.hero.heading'),
-    'body'    => __('join.intro'),
+    'heading' => $pageTitle,
+    'body'    => $pageIntro,
 ])
 
 <section class="bg-white">
@@ -69,7 +80,7 @@
                 </div>
 
                 <form method="POST"
-                      action="{{ isset($preview) && $preview ? '#' : route('join.store', ['locale' => $locale]) }}"
+                      action="{{ isset($preview) && $preview ? '#' : $submitAction }}"
                       enctype="multipart/form-data"
                       @submit.prevent="onSubmit">
                     @csrf

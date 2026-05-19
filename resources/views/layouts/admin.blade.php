@@ -22,14 +22,19 @@
         'submissions' => FormSubmission::where('status', 'pending')->count(),
     ];
 
-    $nav = [
-        ['key' => 'dashboard',   'route' => 'admin.dashboard',         'label' => __('admin.dashboard'),          'badge' => null],
-        ['key' => 'news',        'route' => 'admin.news.index',        'label' => __('admin.news'),               'badge' => null],
-        ['key' => 'forms',       'route' => 'admin.forms.builder',     'label' => __('admin.form_builder'),       'badge' => null],
-        ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'),        'badge' => $unread['submissions']],
-        ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),            'badge' => $unread['contact']],
-        ['key' => 'settings',    'route' => 'admin.settings.edit',     'label' => __('admin.site_customization'), 'badge' => null],
-    ];
+    $nav = auth()->user()?->isNewsSubadmin()
+        ? [
+            ['key' => 'news', 'route' => 'admin.news.index', 'label' => __('admin.news'), 'badge' => null],
+        ]
+        : [
+            ['key' => 'dashboard',   'route' => 'admin.dashboard',         'label' => __('admin.dashboard'),          'badge' => null],
+            ['key' => 'news',        'route' => 'admin.news.index',        'label' => __('admin.news'),               'badge' => null],
+            ['key' => 'forms',       'route' => 'admin.forms.index',       'label' => __('admin.form_builder'),       'badge' => null],
+            ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'),        'badge' => $unread['submissions']],
+            ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),            'badge' => $unread['contact']],
+            ['key' => 'users',       'route' => 'admin.users.index',       'label' => 'Admin Users',                  'badge' => null],
+            ['key' => 'settings',    'route' => 'admin.settings.edit',     'label' => __('admin.site_customization'), 'badge' => null],
+        ];
 @endphp
 
 {{-- Mobile overlay --}}
@@ -44,7 +49,7 @@
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
     <div class="h-20 flex items-center px-6 border-b border-white/10">
-        <a href="{{ route('admin.dashboard') }}" aria-label="{{ __('common.site_name') }}">
+        <a href="{{ auth()->user()?->isNewsSubadmin() ? route('admin.news.index') : route('admin.dashboard') }}" aria-label="{{ __('common.site_name') }}">
             <img src="{{ asset('images/logos/logo-one-tone.png') }}"
                  alt="{{ __('common.site_name') }}"
                  class="h-12 w-auto"

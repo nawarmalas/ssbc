@@ -11,7 +11,10 @@ class NewsController extends Controller
 {
     public function index()
     {
-        $posts = NewsPost::orderByDesc('created_at')->get();
+        $posts = NewsPost::query()
+            ->when(auth()->user()?->isNewsSubadmin(), fn ($query) => $query->where('status', 'draft'))
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('admin.news.index', compact('posts'));
     }
@@ -34,6 +37,11 @@ class NewsController extends Controller
             $featured = $request->file('featured_image')->store('news/'.$slug, 'public');
         }
 
+        if ($request->user()?->isNewsSubadmin()) {
+            $data['status'] = 'draft';
+            $data['published_at'] = null;
+        }
+
         $publishedAt = $data['status'] === 'published'
             ? ($data['published_at'] ?? now())
             : ($data['published_at'] ?? null);
@@ -50,6 +58,8 @@ class NewsController extends Controller
             'category' => $data['category'] ?? null,
             'status' => $data['status'],
             'published_at' => $publishedAt,
+            'created_by_user_id' => $request->user()?->id,
+            'updated_by_user_id' => $request->user()?->id,
         ]);
 
         return redirect()->route('admin.news.index')->with('status', __('admin.news_created'));
@@ -57,12 +67,21 @@ class NewsController extends Controller
 
     public function edit(NewsPost $news)
     {
+        $this->authorizeSubadminDraftAccess($news);
+
         return view('admin.news.edit', ['post' => $news]);
     }
 
     public function update(Request $request, NewsPost $news)
     {
+        $this->authorizeSubadminDraftAccess($news);
+
         $data = $this->validatePost($request);
+
+        if ($request->user()?->isNewsSubadmin()) {
+            $data['status'] = 'draft';
+            $data['published_at'] = null;
+        }
 
         if ($data['title_en'] !== $news->title_en) {
             $news->slug = NewsPost::generateUniqueSlug($data['title_en'], $news->id);
@@ -84,6 +103,7 @@ class NewsController extends Controller
             'content_ar' => $data['content_ar'] ?? null,
             'category' => $data['category'] ?? null,
             'status' => $data['status'],
+            'updated_by_user_id' => $request->user()?->id,
         ]);
 
         if ($data['status'] === 'published' && ! $news->published_at) {
@@ -101,6 +121,10 @@ class NewsController extends Controller
 
     public function destroy(NewsPost $news)
     {
+        if (auth()->user()?->isNewsSubadmin() && $news->status !== 'draft') {
+            abort(403);
+        }
+
         if ($news->featured_image) {
             Storage::disk('public')->delete($news->featured_image);
         }
@@ -123,5 +147,12 @@ class NewsController extends Controller
             'status' => ['required', 'in:draft,published'],
             'published_at' => ['nullable', 'date'],
         ]);
+    }
+
+    protected function authorizeSubadminDraftAccess(NewsPost $news): void
+    {
+        if (auth()->user()?->isNewsSubadmin() && $news->status !== 'draft') {
+            abort(403);
+        }
     }
 }

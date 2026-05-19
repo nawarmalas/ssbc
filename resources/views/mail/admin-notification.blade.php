@@ -9,7 +9,7 @@
   td:first-child { background: #f5f5f0; font-weight: bold; width: 35%; }
 </style></head>
 <body>
-<h1>New Membership Application</h1>
+<h1>New {{ $submission->formDefinition?->title_en ?? 'Form' }} Submission</h1>
 <p>Submitted: {{ $submission->submitted_at->format('d M Y H:i') }} UTC</p>
 <p>IP: {{ $submission->ip_address }}</p>
 

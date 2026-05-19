@@ -20,6 +20,8 @@ class NewsPost extends Model
         'category',
         'status',
         'published_at',
+        'created_by_user_id',
+        'updated_by_user_id',
     ];
 
     protected function casts(): array

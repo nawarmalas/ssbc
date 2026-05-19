@@ -27,9 +27,21 @@ class LoginController extends Controller
             ]);
         }
 
+        if (! $request->user()->is_active) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'This account is inactive. Please contact the main admin.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        $fallback = $request->user()->isNewsSubadmin()
+            ? route('admin.news.index')
+            : route('admin.dashboard');
+
+        return redirect()->intended($fallback);
     }
 
     public function destroy(Request $request)

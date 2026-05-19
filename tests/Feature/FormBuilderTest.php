@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\FormSection;
+use App\Models\FormDefinition;
 use App\Models\FormField;
+use App\Models\FormSection;
+use App\Models\User;
 use App\Services\FormService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -16,12 +17,19 @@ class FormBuilderTest extends TestCase
 
     private function actingAsAdmin(): static
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
         return $this->actingAs($admin);
+    }
+
+    private function joinForm(): FormDefinition
+    {
+        return FormDefinition::where('form_id', 'join-us')->firstOrFail();
     }
 
     public function test_form_tables_exist(): void
     {
+        $this->assertTrue(Schema::hasTable('form_definitions'));
         $this->assertTrue(Schema::hasTable('form_sections'));
         $this->assertTrue(Schema::hasTable('form_fields'));
         $this->assertTrue(Schema::hasTable('form_submissions'));
@@ -32,16 +40,26 @@ class FormBuilderTest extends TestCase
     public function test_get_active_form_returns_sections_with_fields(): void
     {
         $section = FormSection::create([
-            'form_id' => 'join-us', 'title_en' => 'Personal', 'title_ar' => 'شخصي',
+            'form_id' => 'join-us',
+            'title_en' => 'Personal',
+            'title_ar' => 'Personal',
             'order_index' => 0,
         ]);
         FormField::create([
-            'section_id' => $section->id, 'label_en' => 'Name', 'label_ar' => 'الاسم',
-            'field_type' => 'text', 'is_active' => true, 'order_index' => 0,
+            'section_id' => $section->id,
+            'label_en' => 'Name',
+            'label_ar' => 'Name',
+            'field_type' => 'text',
+            'is_active' => true,
+            'order_index' => 0,
         ]);
         FormField::create([
-            'section_id' => $section->id, 'label_en' => 'Hidden', 'label_ar' => 'مخفي',
-            'field_type' => 'text', 'is_active' => false, 'order_index' => 1,
+            'section_id' => $section->id,
+            'label_en' => 'Hidden',
+            'label_ar' => 'Hidden',
+            'field_type' => 'text',
+            'is_active' => false,
+            'order_index' => 1,
         ]);
 
         $form = FormService::getActiveForm('join-us');
@@ -53,7 +71,10 @@ class FormBuilderTest extends TestCase
     public function test_get_active_form_is_cached(): void
     {
         FormSection::create([
-            'form_id' => 'join-us', 'title_en' => 'S1', 'title_ar' => 'ق1', 'order_index' => 0,
+            'form_id' => 'join-us',
+            'title_en' => 'S1',
+            'title_ar' => 'S1',
+            'order_index' => 0,
         ]);
 
         FormService::getActiveForm('join-us');
@@ -65,9 +86,9 @@ class FormBuilderTest extends TestCase
 
     public function test_admin_can_create_section(): void
     {
-        $this->actingAsAdmin()->postJson('/admin/forms/join-us/sections', [
+        $this->actingAsAdmin()->postJson(route('admin.forms.sections.store', $this->joinForm()), [
             'title_en' => 'Test Section',
-            'title_ar' => 'قسم تجريبي',
+            'title_ar' => 'Test Section',
         ])->assertJson(['success' => true]);
 
         $this->assertDatabaseHas('form_sections', ['title_en' => 'Test Section']);
@@ -76,19 +97,25 @@ class FormBuilderTest extends TestCase
     public function test_admin_can_delete_section_with_fields_only_when_forced(): void
     {
         $section = FormSection::create([
-            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'ق', 'order_index' => 0,
+            'form_id' => 'join-us',
+            'title_en' => 'S',
+            'title_ar' => 'S',
+            'order_index' => 0,
         ]);
         FormField::create([
-            'section_id' => $section->id, 'label_en' => 'F', 'label_ar' => 'ف',
-            'field_type' => 'text', 'order_index' => 0,
+            'section_id' => $section->id,
+            'label_en' => 'F',
+            'label_ar' => 'F',
+            'field_type' => 'text',
+            'order_index' => 0,
         ]);
 
         $this->actingAsAdmin()
-            ->deleteJson("/admin/forms/join-us/sections/{$section->id}")
+            ->deleteJson(route('admin.forms.sections.destroy', [$this->joinForm(), $section]))
             ->assertJson(['success' => false, 'has_fields' => true]);
 
         $this->actingAsAdmin()
-            ->deleteJson("/admin/forms/join-us/sections/{$section->id}?force=1")
+            ->deleteJson(route('admin.forms.sections.destroy', [$this->joinForm(), $section]).'?force=1')
             ->assertJson(['success' => true]);
 
         $this->assertDatabaseMissing('form_sections', ['id' => $section->id]);
@@ -97,13 +124,16 @@ class FormBuilderTest extends TestCase
     public function test_admin_can_create_and_delete_field(): void
     {
         $section = FormSection::create([
-            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'ق', 'order_index' => 0,
+            'form_id' => 'join-us',
+            'title_en' => 'S',
+            'title_ar' => 'S',
+            'order_index' => 0,
         ]);
 
-        $response = $this->actingAsAdmin()->postJson('/admin/forms/join-us/fields', [
+        $response = $this->actingAsAdmin()->postJson(route('admin.forms.fields.store', $this->joinForm()), [
             'section_id' => $section->id,
-            'label_en'   => 'Phone Number',
-            'label_ar'   => 'رقم الهاتف',
+            'label_en' => 'Phone Number',
+            'label_ar' => 'Phone Number',
             'field_type' => 'tel',
             'is_required' => true,
         ]);
@@ -112,7 +142,7 @@ class FormBuilderTest extends TestCase
         $fieldId = $response->json('data.id');
 
         $this->actingAsAdmin()
-            ->deleteJson("/admin/forms/join-us/fields/{$fieldId}")
+            ->deleteJson(route('admin.forms.fields.destroy', [$this->joinForm(), $fieldId]))
             ->assertJson(['success' => true]);
 
         $this->assertDatabaseMissing('form_fields', ['id' => $fieldId]);

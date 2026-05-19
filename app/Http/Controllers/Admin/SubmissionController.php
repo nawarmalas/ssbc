@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\SubmissionsExport;
 use App\Http\Controllers\Controller;
+use App\Models\FormDefinition;
 use App\Models\FormSection;
 use App\Models\FormSubmission;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,8 +15,11 @@ class SubmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = FormSubmission::where('form_id', 'join-us')
-            ->orderByDesc('submitted_at');
+        $query = FormSubmission::with('formDefinition')->orderByDesc('submitted_at');
+
+        if ($request->filled('form_id')) {
+            $query->where('form_id', $request->input('form_id'));
+        }
 
         if ($request->filled('from')) {
             $query->whereDate('submitted_at', '>=', $request->input('from'));
@@ -26,14 +30,16 @@ class SubmissionController extends Controller
 
         $submissions = $query->paginate(30)->withQueryString();
 
-        return view('admin.submissions.index', compact('submissions'));
+        $forms = FormDefinition::orderBy('title_en')->get();
+
+        return view('admin.submissions.index', compact('submissions', 'forms'));
     }
 
     public function show(FormSubmission $submission)
     {
-        $submission->load(['answers', 'uploads']);
+        $submission->load(['answers', 'uploads', 'formDefinition']);
         $sections = FormSection::with('allFields')
-            ->where('form_id', 'join-us')
+            ->where('form_id', $submission->form_id)
             ->orderBy('order_index')
             ->get();
 
@@ -63,9 +69,9 @@ class SubmissionController extends Controller
 
     public function pdf(FormSubmission $submission)
     {
-        $submission->load(['answers', 'uploads']);
+        $submission->load(['answers', 'uploads', 'formDefinition']);
         $sections = FormSection::with('allFields')
-            ->where('form_id', 'join-us')
+            ->where('form_id', $submission->form_id)
             ->orderBy('order_index')
             ->get();
 
@@ -79,9 +85,10 @@ class SubmissionController extends Controller
     {
         $from = $request->input('from');
         $to   = $request->input('to');
+        $formId = $request->input('form_id');
 
         return Excel::download(
-            new SubmissionsExport($from, $to),
+            new SubmissionsExport($from, $to, $formId),
             'ssbc-submissions-' . now()->format('Y-m-d') . '.xlsx'
         );
     }

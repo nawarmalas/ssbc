@@ -18,15 +18,17 @@ class AdminSubmissionNotification extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'New SSBC Membership Application — ' . $this->submission->display_name,
-        );
+        $this->submission->loadMissing('formDefinition');
+        $label = $this->submission->formDefinition?->title_en ?? 'Form';
+        $name = $this->submission->display_name ?: '#'.$this->submission->id;
+
+        return new Envelope(subject: "New SSBC {$label} Submission - {$name}");
     }
 
     public function content(): Content
     {
-        $form = FormService::getActiveForm('join-us');
-        $this->submission->load(['answers', 'uploads']);
+        $form = FormService::getActiveForm($this->submission->form_id);
+        $this->submission->load(['answers', 'uploads', 'formDefinition']);
 
         return new Content(
             view: 'mail.admin-notification',

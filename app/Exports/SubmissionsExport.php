@@ -13,18 +13,21 @@ class SubmissionsExport implements FromCollection, WithHeadings
     public function __construct(
         private ?string $from = null,
         private ?string $to = null,
+        private ?string $formId = null,
     ) {}
 
     public function collection(): Collection
     {
         $sections = FormSection::with('allFields')
-            ->where('form_id', 'join-us')
+            ->where('form_id', $this->formId ?: 'join-us')
             ->orderBy('order_index')
             ->get();
 
-        $query = FormSubmission::where('form_id', 'join-us')
+        $query = FormSubmission::query()
             ->with(['answers'])
             ->orderBy('submitted_at');
+
+        $query->where('form_id', $this->formId ?: 'join-us');
 
         if ($this->from) $query->whereDate('submitted_at', '>=', $this->from);
         if ($this->to)   $query->whereDate('submitted_at', '<=', $this->to);
@@ -57,7 +60,7 @@ class SubmissionsExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         $sections = FormSection::with('allFields')
-            ->where('form_id', 'join-us')
+            ->where('form_id', $this->formId ?: 'join-us')
             ->orderBy('order_index')
             ->get();
 

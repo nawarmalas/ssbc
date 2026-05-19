@@ -9,7 +9,10 @@
 <div class="mt-4 flex flex-wrap items-start justify-between gap-3 mb-6">
     <div>
         <h1 class="text-2xl font-display font-bold text-ssbc-green">{{ $submission->display_name ?? 'Submission #' . $submission->id }}</h1>
-        <p class="text-sm text-ssbc-sage mt-1">Submitted {{ $submission->submitted_at->format('d M Y H:i') }} UTC · IP: {{ $submission->ip_address }}</p>
+        <p class="text-sm text-ssbc-sage mt-1">
+            {{ $submission->formDefinition?->title_en ?? $submission->form_id }} -
+            Submitted {{ $submission->submitted_at->format('d M Y H:i') }} UTC - IP: {{ $submission->ip_address }}
+        </p>
     </div>
     <div class="flex gap-2">
         <a href="{{ route('admin.submissions.pdf', $submission) }}" class="ssbc-admin-btn-primary">Download PDF</a>

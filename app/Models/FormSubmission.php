@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FormSubmission extends Model
@@ -27,6 +28,11 @@ class FormSubmission extends Model
     public function uploads(): HasMany
     {
         return $this->hasMany(FormUpload::class, 'submission_id');
+    }
+
+    public function formDefinition(): BelongsTo
+    {
+        return $this->belongsTo(FormDefinition::class, 'form_id', 'form_id');
     }
 
     public function answerFor(int $fieldId, int $repeatIndex = 0): ?string
