@@ -24,7 +24,7 @@ class UserController extends Controller
     {
         return view('admin.users.create', [
             'adminUser' => new User([
-                'role' => User::ROLE_NEWS_SUBADMIN,
+                'role' => User::ROLE_SUBADMIN,
                 'is_active' => true,
             ]),
             'roles' => User::ROLES,
@@ -40,6 +40,7 @@ class UserController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $data['role'],
+            'permissions' => $this->resolvePermissions($request, $data['role']),
             'is_active' => $request->boolean('is_active'),
         ]);
 
@@ -76,6 +77,7 @@ class UserController extends Controller
             'name' => $data['name'] ?? null,
             'email' => $data['email'],
             'role' => $data['role'],
+            'permissions' => $this->resolvePermissions($request, $data['role']),
             'is_active' => $isActive,
         ];
 
@@ -121,8 +123,36 @@ class UserController extends Controller
             ],
             'role' => ['required', Rule::in(array_keys(User::ROLES))],
             'is_active' => ['boolean'],
+            'permissions'   => ['nullable', 'array'],
+            'permissions.*' => ['in:0,1'],
             'password' => $passwordRules,
         ]);
+    }
+
+    /**
+     * Convert the form's `permissions[news_write]=1` checkbox map into a
+     * flat list of enabled permission keys. Admins implicitly hold every
+     * permission so we store an empty array — `hasPermission()` short-circuits
+     * via `isAdmin()`.
+     */
+    private function resolvePermissions(Request $request, string $role): array
+    {
+        if ($role !== User::ROLE_SUBADMIN) {
+            return [];
+        }
+
+        $submitted = (array) $request->input('permissions', []);
+        $valid = array_keys(User::PERMISSIONS);
+
+        $enabled = [];
+        foreach ($valid as $key) {
+            $value = $submitted[$key] ?? '0';
+            if ($value === '1' || $value === 1 || $value === true) {
+                $enabled[] = $key;
+            }
+        }
+
+        return $enabled;
     }
 
     private function wouldRemoveLastActiveAdmin(User $user, ?string $newRole, bool $newActive): bool

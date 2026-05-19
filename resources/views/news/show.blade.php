@@ -17,7 +17,7 @@
         <article class="max-w-3xl mx-auto">
             <div class="flex items-center gap-3 mb-4 text-sm text-ssbc-gold uppercase tracking-wider font-semibold">
                 @if($post->published_at)
-                    <span>{{ $post->published_at->format('d F Y') }}</span>
+                    <span>{{ $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('d F Y') }}</span>
                 @endif
                 @if($post->category)
                     <span class="text-ssbc-sage">·</span>

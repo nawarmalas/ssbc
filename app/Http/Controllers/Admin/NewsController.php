@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NewsPost;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class NewsController extends Controller
@@ -12,7 +13,7 @@ class NewsController extends Controller
     public function index()
     {
         $posts = NewsPost::query()
-            ->when(auth()->user()?->isNewsSubadmin(), fn ($query) => $query->where('status', 'draft'))
+            ->when(auth()->user()?->canPublishNews() === false, fn ($query) => $query->where('status', 'draft'))
             ->orderByDesc('created_at')
             ->get();
 
@@ -37,14 +38,10 @@ class NewsController extends Controller
             $featured = $request->file('featured_image')->store('news/'.$slug, 'public');
         }
 
-        if ($request->user()?->isNewsSubadmin()) {
+        if ($request->user()?->canPublishNews() === false) {
             $data['status'] = 'draft';
             $data['published_at'] = null;
         }
-
-        $publishedAt = $data['status'] === 'published'
-            ? ($data['published_at'] ?? now())
-            : ($data['published_at'] ?? null);
 
         NewsPost::create([
             'slug' => $slug,
@@ -57,7 +54,7 @@ class NewsController extends Controller
             'featured_image' => $featured,
             'category' => $data['category'] ?? null,
             'status' => $data['status'],
-            'published_at' => $publishedAt,
+            'published_at' => $this->publishedAtFromRequest($request, $data['status']),
             'created_by_user_id' => $request->user()?->id,
             'updated_by_user_id' => $request->user()?->id,
         ]);
@@ -76,10 +73,9 @@ class NewsController extends Controller
     {
         $this->authorizeSubadminDraftAccess($news);
 
-        $wasPublished = $news->status === 'published';
         $data = $this->validatePost($request);
 
-        if ($request->user()?->isNewsSubadmin()) {
+        if ($request->user()?->canPublishNews() === false) {
             $data['status'] = 'draft';
             $data['published_at'] = null;
         }
@@ -107,15 +103,7 @@ class NewsController extends Controller
             'updated_by_user_id' => $request->user()?->id,
         ]);
 
-        if ($data['status'] === 'published' && ! $wasPublished) {
-            $news->published_at = $request->filled('published_at') ? $data['published_at'] : now();
-        } elseif ($data['status'] === 'published' && ! $news->published_at) {
-            $news->published_at = now();
-        } elseif ($data['status'] === 'draft' && empty($data['published_at'])) {
-            $news->published_at = null;
-        } elseif (! empty($data['published_at'])) {
-            $news->published_at = $data['published_at'];
-        }
+        $news->published_at = $this->publishedAtFromRequest($request, $data['status']);
 
         $news->save();
 
@@ -124,7 +112,7 @@ class NewsController extends Controller
 
     public function destroy(NewsPost $news)
     {
-        if (auth()->user()?->isNewsSubadmin() && $news->status !== 'draft') {
+        if (auth()->user()?->canPublishNews() === false && $news->status !== 'draft') {
             abort(403);
         }
 
@@ -152,9 +140,28 @@ class NewsController extends Controller
         ]);
     }
 
+    protected function publishedAtFromRequest(Request $request, string $status): ?Carbon
+    {
+        if ($status !== 'published') {
+            return null;
+        }
+
+        if (! $request->filled('published_at')) {
+            return now();
+        }
+
+        return Carbon::parse($request->input('published_at'), $this->adminTimezone())
+            ->timezone(config('app.timezone', 'UTC'));
+    }
+
+    protected function adminTimezone(): string
+    {
+        return config('app.admin_timezone', config('app.timezone', 'UTC'));
+    }
+
     protected function authorizeSubadminDraftAccess(NewsPost $news): void
     {
-        if (auth()->user()?->isNewsSubadmin() && $news->status !== 'draft') {
+        if (auth()->user()?->canPublishNews() === false && $news->status !== 'draft') {
             abort(403);
         }
     }

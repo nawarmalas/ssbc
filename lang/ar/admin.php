@@ -92,6 +92,7 @@ return [
     'address_en' => 'العنوان (إنجليزي)',
     'address_ar' => 'العنوان (عربي)',
     'social_links' => 'روابط التواصل الاجتماعي',
+    'permissions' => 'الصلاحيات',
     'footer_desc_en' => 'وصف التذييل (إنجليزي)',
     'footer_desc_ar' => 'وصف التذييل (عربي)',
 

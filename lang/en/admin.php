@@ -92,6 +92,7 @@ return [
     'address_en' => 'Address (English)',
     'address_ar' => 'Address (Arabic)',
     'social_links' => 'Social Links',
+    'permissions' => 'Permissions',
     'footer_desc_en' => 'Footer description (English)',
     'footer_desc_ar' => 'Footer description (Arabic)',
 

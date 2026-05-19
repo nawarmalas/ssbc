@@ -1,7 +1,12 @@
 @php
     $isEdit = isset($post) && $post->exists;
     $action = $isEdit ? route('admin.news.update', $post) : route('admin.news.store');
-    $isNewsSubadmin = auth()->user()?->isNewsSubadmin();
+    // Users who can write drafts but not publish (the old "news subadmin"
+    // bucket) need the status/published_at controls hidden.
+    $isNewsSubadmin = auth()->user() && ! auth()->user()->canPublishNews();
+    $publishedAtValue = $post->status === 'published' && $post->published_at
+        ? $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('Y-m-d\TH:i')
+        : '';
 @endphp
 
 @if ($errors->any())
@@ -85,9 +90,9 @@
             <div>
                 <label class="ssbc-admin-label" for="published_at">{{ __('admin.news_published_at') }}</label>
                 <input id="published_at" name="published_at" type="datetime-local" class="ssbc-admin-input"
-                       value="{{ old('published_at', $post->status === 'published' && $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
+                       value="{{ old('published_at', $publishedAtValue) }}">
                 <p class="text-xs text-ssbc-sage mt-1">
-                    Leave blank when publishing to make the post visible immediately. Future dates will keep it hidden until that time.
+                    Leave blank when publishing to make the post visible immediately. Scheduled times use the admin timezone; future dates will keep it hidden until that time.
                 </p>
             </div>
         @endif
@@ -106,17 +111,18 @@
 
     <div class="flex items-center justify-between border-t border-gray-200 pt-6">
         <a href="{{ route('admin.news.index') }}" class="text-sm text-ssbc-sage hover:text-ssbc-green">← Back to list</a>
-
-        <div class="flex items-center gap-3">
-            @if($isEdit && (! $isNewsSubadmin || $post->status === 'draft'))
-                @include('partials.admin.confirm-delete', [
-                    'action'  => route('admin.news.destroy', $post),
-                    'title'   => __('admin.confirm_delete'),
-                    'message' => 'This permanently removes the post.',
-                    'button'  => __('admin.delete'),
-                ])
-            @endif
-            <button type="submit" class="ssbc-admin-btn-primary">{{ __('admin.save') }}</button>
-        </div>
+        <button type="submit" class="ssbc-admin-btn-primary">{{ __('admin.save') }}</button>
     </div>
 </form>
+
+{{-- Delete sits OUTSIDE the edit form to avoid nested-form parser issues. --}}
+@if($isEdit && (! $isNewsSubadmin || $post->status === 'draft'))
+    <div class="mt-6 flex justify-end">
+        @include('partials.admin.confirm-delete', [
+            'action'  => route('admin.news.destroy', $post),
+            'title'   => __('admin.confirm_delete'),
+            'message' => 'This permanently removes the post.',
+            'button'  => __('admin.delete'),
+        ])
+    </div>
+@endif

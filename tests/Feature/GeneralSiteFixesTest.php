@@ -7,11 +7,63 @@ use App\Models\FormSubmission;
 use App\Models\NewsPost;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class GeneralSiteFixesTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_admin_can_create_published_news_post_immediately_without_draft_phase(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-19 15:39:00', 'UTC'));
+
+        try {
+            $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+            $this->actingAs($admin)->post(route('admin.news.store'), [
+                'title_en' => 'Immediate News',
+                'title_ar' => 'Immediate News',
+                'status' => 'published',
+            ])->assertRedirect(route('admin.news.index'));
+
+            $post = NewsPost::where('slug', 'immediate-news')->firstOrFail();
+
+            $this->assertSame('published', $post->status);
+            $this->assertNotNull($post->published_at);
+            $this->assertTrue(NewsPost::published()->whereKey($post)->exists());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_admin_local_publish_time_is_converted_before_public_scope_checks_it(): void
+    {
+        config([
+            'app.timezone' => 'UTC',
+            'app.admin_timezone' => 'Asia/Damascus',
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-05-19 15:39:00', 'UTC'));
+
+        try {
+            $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+            $this->actingAs($admin)->post(route('admin.news.store'), [
+                'title_en' => 'Local Time News',
+                'title_ar' => 'Local Time News',
+                'status' => 'published',
+                'published_at' => '2026-05-19T18:39',
+            ])->assertRedirect(route('admin.news.index'));
+
+            $post = NewsPost::where('slug', 'local-time-news')->firstOrFail();
+
+            $this->assertSame('2026-05-19 15:39:00', $post->published_at->toDateTimeString());
+            $this->assertTrue(NewsPost::published()->whereKey($post)->exists());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 
     public function test_admin_publishing_draft_makes_news_post_public_immediately(): void
     {

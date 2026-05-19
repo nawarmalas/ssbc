@@ -33,7 +33,7 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-ssbc-dark/70">
-                            {{ $post->published_at ? $post->published_at->format('d M Y') : '—' }}
+                            {{ $post->published_at ? $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('d M Y, g:i A') : '—' }}
                         </td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('admin.news.edit', $post) }}" class="ssbc-link-gold">{{ __('admin.edit') }}</a>

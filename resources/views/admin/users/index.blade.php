@@ -25,7 +25,18 @@
                 <tr class="ssbc-admin-row">
                     <td class="px-4 py-3 font-semibold text-ssbc-dark">{{ $adminUser->name ?: '-' }}</td>
                     <td class="px-4 py-3 text-ssbc-dark">{{ $adminUser->email }}</td>
-                    <td class="px-4 py-3">{{ $adminUser->roleLabel() }}</td>
+                    <td class="px-4 py-3">
+                        <div class="font-semibold text-ssbc-dark">{{ $adminUser->roleLabel() }}</div>
+                        @if($adminUser->isSubadmin())
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                @forelse($adminUser->permissionLabels() as $label)
+                                    <span class="inline-block bg-ssbc-beige text-ssbc-green text-xs px-2 py-0.5 border border-ssbc-green/15">{{ $label }}</span>
+                                @empty
+                                    <span class="text-xs text-ssbc-sage italic">No permissions</span>
+                                @endforelse
+                            </div>
+                        @endif
+                    </td>
                     <td class="px-4 py-3">
                         <span class="ssbc-status-badge {{ $adminUser->is_active ? 'ssbc-status-approved' : 'ssbc-status-rejected' }}">
                             {{ $adminUser->is_active ? 'Active' : 'Inactive' }}

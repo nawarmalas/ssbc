@@ -16,7 +16,7 @@
         <div class="flex items-center gap-3 mb-3">
             @if($post->published_at)
                 <span class="inline-block bg-ssbc-gold/15 text-ssbc-gold text-xs px-2 py-1 font-semibold uppercase tracking-wider">
-                    {{ $post->published_at->format('d M Y') }}
+                    {{ $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('d M Y') }}
                 </span>
             @endif
             @if($post->category)

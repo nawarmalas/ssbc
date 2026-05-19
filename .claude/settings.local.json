@@ -39,7 +39,11 @@
       "Bash(curl -s \"http://127.0.0.1:8765/en/contact\" -o /tmp/contact.html)",
       "Bash(grep -oE \"Follow us|aria-label=\\\\\"\\(LinkedIn|X \\\\\\\\\\(Twitter\\\\\\\\\\)|Instagram|Facebook\\)\\\\\"\" /tmp/contact.html)",
       "Bash(curl -s \"http://127.0.0.1:8765/ar/contact\")",
-      "Bash(curl -s \"http://127.0.0.1:8765/en/contact\")"
+      "Bash(curl -s \"http://127.0.0.1:8765/en/contact\")",
+      "Bash(php -r ' *)",
+      "Bash(curl -s -b /tmp/ssbc_cookies.txt \"http://127.0.0.1:8765/admin/users/create\")",
+      "Bash(rm -f /tmp/sub_cookies.txt)",
+      "Bash(curl -s -c /tmp/sub_cookies.txt \"http://127.0.0.1:8765/admin/login\")"
     ]
   }
 }

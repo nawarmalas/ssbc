@@ -52,8 +52,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         $user = auth()->user();
 
-        if ($user?->isNewsSubadmin()) {
-            return redirect()->route('admin.news.index');
+        if ($user?->isSubadmin()) {
+            if ($user->canManageNews()) {
+                return redirect()->route('admin.news.index');
+            }
+            if ($user->canCustomizeSite()) {
+                return redirect()->route('admin.settings.edit');
+            }
+            abort(403);
         }
 
         return redirect()->route('admin.dashboard');
@@ -72,8 +78,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('dashboard');
 
         Route::resource('news', AdminNewsController::class)
-            ->middleware('admin.role:admin,news_subadmin')
+            ->middleware('admin.permission:news_write,news_publish')
             ->except(['show']);
+
+        Route::middleware('admin.permission:site_customization')->group(function () {
+            Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+            Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+            Route::patch('/settings/home', [SettingsController::class, 'updateHome'])->name('settings.home.update');
+            Route::patch('/settings/about', [SettingsController::class, 'updateAbout'])->name('settings.about.update');
+            Route::post('/settings/hero-image', [SettingsController::class, 'updateHeroImage'])->name('settings.hero.update');
+            Route::delete('/settings/hero-image', [SettingsController::class, 'deleteHeroImage'])->name('settings.hero.destroy');
+        });
 
         Route::middleware('admin.role:admin')->group(function () {
             Route::resource('users', AdminUserController::class)->except(['show']);
@@ -82,13 +97,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/contact/{contactSubmission}', [AdminContactController::class, 'show'])->name('contact.show');
             Route::patch('/contact/{contactSubmission}', [AdminContactController::class, 'update'])->name('contact.update');
             Route::delete('/contact/{contactSubmission}', [AdminContactController::class, 'destroy'])->name('contact.destroy');
-
-            Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
-            Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
-            Route::patch('/settings/home', [SettingsController::class, 'updateHome'])->name('settings.home.update');
-            Route::patch('/settings/about', [SettingsController::class, 'updateAbout'])->name('settings.about.update');
-            Route::post('/settings/hero-image', [SettingsController::class, 'updateHeroImage'])->name('settings.hero.update');
-            Route::delete('/settings/hero-image', [SettingsController::class, 'deleteHeroImage'])->name('settings.hero.destroy');
 
             Route::get('/forms', [AdminFormDefinitionController::class, 'index'])->name('forms.index');
             Route::post('/forms', [AdminFormDefinitionController::class, 'store'])->name('forms.store');

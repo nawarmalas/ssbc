@@ -21,6 +21,7 @@
     'eyebrow' => __('join.hero.eyebrow'),
     'heading' => $pageTitle,
     'body'    => $pageIntro,
+    'padding' => 'py-12 lg:py-16',
 ])
 
 <section class="bg-white">
@@ -31,8 +32,8 @@
             <div class="flex flex-col items-center mb-12 text-center">
                 <img src="{{ asset('images/logos/logo-two-tone.png') }}"
                      alt="{{ __('common.site_name') }}"
-                     class="h-16 md:h-20 w-auto mb-4" loading="lazy">
-                <div class="w-16 h-px bg-ssbc-gold"></div>
+                     class="h-24 md:h-32 w-auto mb-4" loading="lazy">
+                <div class="w-20 h-px bg-ssbc-gold"></div>
             </div>
 
             @if(isset($preview) && $preview)

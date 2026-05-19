@@ -37,9 +37,14 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        $fallback = $request->user()->isNewsSubadmin()
-            ? route('admin.news.index')
-            : route('admin.dashboard');
+        $user = $request->user();
+        if ($user->isSubadmin()) {
+            $fallback = $user->canManageNews()
+                ? route('admin.news.index')
+                : ($user->canCustomizeSite() ? route('admin.settings.edit') : route('admin.login'));
+        } else {
+            $fallback = route('admin.dashboard');
+        }
 
         return redirect()->intended($fallback);
     }

@@ -1,5 +1,6 @@
+@php $padding = $padding ?? 'py-20 lg:py-28'; @endphp
 <section class="bg-ssbc-green text-white">
-    <div class="ssbc-container py-20 lg:py-28">
+    <div class="ssbc-container {{ $padding }}">
         @if(!empty($eyebrow))
             <p class="ssbc-eyebrow mb-4">{{ $eyebrow }}</p>
         @endif
