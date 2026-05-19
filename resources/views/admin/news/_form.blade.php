@@ -95,11 +95,12 @@
 
         <div class="flex items-center gap-3">
             @if($isEdit)
-                <form method="POST" action="{{ route('admin.news.destroy', $post) }}"
-                      onsubmit="return confirm('{{ __('admin.confirm_delete') }}');">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="ssbc-admin-btn-danger">{{ __('admin.delete') }}</button>
-                </form>
+                @include('partials.admin.confirm-delete', [
+                    'action'  => route('admin.news.destroy', $post),
+                    'title'   => __('admin.confirm_delete'),
+                    'message' => 'This permanently removes the post.',
+                    'button'  => __('admin.delete'),
+                ])
             @endif
             <button type="submit" class="ssbc-admin-btn-primary">{{ __('admin.save') }}</button>
         </div>

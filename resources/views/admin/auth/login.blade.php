@@ -11,9 +11,9 @@
 
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
-            <img src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
+            <img src="{{ asset('images/logos/logo-two-tone.png') }}"
                  alt="{{ __('common.site_name') }}"
-                 class="h-12 w-auto mx-auto"
+                 class="h-16 w-auto mx-auto"
                  loading="eager">
             <p class="mt-3 ssbc-eyebrow">{{ __('admin.login_heading') }}</p>
         </div>

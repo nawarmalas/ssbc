@@ -13,11 +13,12 @@
     </div>
     <div class="flex gap-2">
         <a href="{{ route('admin.submissions.pdf', $submission) }}" class="ssbc-admin-btn-primary">Download PDF</a>
-        <form method="POST" action="{{ route('admin.submissions.destroy', $submission) }}"
-              onsubmit="return confirm('Delete this submission permanently?')">
-            @csrf @method('DELETE')
-            <button type="submit" class="ssbc-admin-btn-danger">Delete</button>
-        </form>
+        @include('partials.admin.confirm-delete', [
+            'action'  => route('admin.submissions.destroy', $submission),
+            'title'   => 'Delete submission?',
+            'message' => 'This permanently removes the submission and any uploaded files. This cannot be undone.',
+            'button'  => __('admin.delete'),
+        ])
     </div>
 </div>
 

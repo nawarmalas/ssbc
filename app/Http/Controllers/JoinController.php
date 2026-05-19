@@ -12,6 +12,7 @@ use App\Mail\ApplicantConfirmation;
 use App\Services\FormService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
@@ -142,11 +143,49 @@ class JoinController extends Controller
         }
 
         // Persist file uploads under submissions/{submission_id}/
-        if ($request->hasFile('files')) {
-            foreach ($request->file('files') as $fieldId => $repeatFiles) {
-                foreach ($repeatFiles as $repeatIndex => $file) {
-                    if (! $file || ! $file->isValid()) continue;
+        $rawFiles = $request->file('files', []);
+        if (empty($rawFiles)) {
+            Log::warning('join.store: no files in request', [
+                'submission_id'    => $submission->id,
+                'content_type'     => $request->header('content-type'),
+                'content_length'   => $request->header('content-length'),
+                'post_max_size'    => ini_get('post_max_size'),
+                'upload_max_size'  => ini_get('upload_max_filesize'),
+                'has_files_key'    => isset($_FILES['files']),
+                'all_files_keys'   => array_keys($request->allFiles()),
+            ]);
+        }
+
+        foreach ($rawFiles as $fieldId => $repeatFiles) {
+            foreach ($repeatFiles as $repeatIndex => $file) {
+                if (! $file) {
+                    Log::warning('join.store: null file entry', [
+                        'submission_id' => $submission->id,
+                        'field_id'      => $fieldId,
+                        'repeat_index'  => $repeatIndex,
+                    ]);
+                    continue;
+                }
+                if (! $file->isValid()) {
+                    Log::warning('join.store: invalid file', [
+                        'submission_id' => $submission->id,
+                        'field_id'      => $fieldId,
+                        'repeat_index'  => $repeatIndex,
+                        'error_code'    => $file->getError(),
+                        'error_message' => $file->getErrorMessage(),
+                        'name'          => $file->getClientOriginalName(),
+                    ]);
+                    continue;
+                }
+                try {
                     $path = $file->store("submissions/{$submission->id}", 'public');
+                    if (! $path) {
+                        Log::error('join.store: $file->store returned false', [
+                            'submission_id' => $submission->id,
+                            'field_id'      => $fieldId,
+                        ]);
+                        continue;
+                    }
                     FormUpload::create([
                         'submission_id' => $submission->id,
                         'field_id'      => (int) $fieldId,
@@ -154,6 +193,13 @@ class JoinController extends Controller
                         'file_path'     => $path,
                         'file_name'     => $file->getClientOriginalName(),
                         'file_size'     => $file->getSize(),
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('join.store: failed to persist upload', [
+                        'submission_id' => $submission->id,
+                        'field_id'      => $fieldId,
+                        'repeat_index'  => $repeatIndex,
+                        'error'         => $e->getMessage(),
                     ]);
                 }
             }

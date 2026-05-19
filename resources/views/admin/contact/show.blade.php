@@ -41,12 +41,16 @@
                 <button type="submit" class="w-full ssbc-admin-btn-primary">{{ __('admin.save') }}</button>
             </form>
 
-            <form method="POST" action="{{ route('admin.contact.destroy', $submission) }}"
-                  onsubmit="return confirm('{{ __('admin.confirm_delete') }}');"
-                  class="mt-6 border-t border-gray-200 pt-4">
-                @csrf @method('DELETE')
-                <button type="submit" class="ssbc-admin-btn-danger w-full">{{ __('admin.delete') }}</button>
-            </form>
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                @include('partials.admin.confirm-delete', [
+                    'action'     => route('admin.contact.destroy', $submission),
+                    'title'      => __('admin.confirm_delete'),
+                    'message'    => 'This permanently removes the contact submission.',
+                    'button'     => __('admin.delete'),
+                    'class'      => 'ssbc-admin-btn-danger w-full',
+                    'extraClass' => 'w-full block',
+                ])
+            </div>
         </div>
     </div>
 @endsection

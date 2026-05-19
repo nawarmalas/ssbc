@@ -12,16 +12,19 @@ return [
 
     'dashboard' => 'لوحة التحكم',
     'news' => 'الأخبار',
-    'join' => 'الانضمام',
+    'form_builder' => 'مُنشئ النموذج',
+    'submissions' => 'الطلبات',
     'contact' => 'تواصل',
-    'membership' => 'العضوية',
     'settings' => 'الإعدادات',
+    'site_customization' => 'تخصيص الموقع',
 
     'overview' => 'نظرة عامة',
     'published_posts' => 'المنشورات المنشورة',
-    'new_join' => 'طلبات انضمام جديدة',
+    'pending_submissions' => 'طلبات قيد المراجعة',
     'new_contact' => 'رسائل تواصل جديدة',
-    'new_membership' => 'طلبات عضوية جديدة',
+
+    'type_submission' => 'طلب',
+    'type_contact' => 'تواصل',
 
     'create' => 'إنشاء',
     'edit' => 'تعديل',
@@ -80,10 +83,13 @@ return [
 
     'contact_email' => 'البريد الإلكتروني للتواصل',
     'contact_phone' => 'هاتف التواصل',
+    'contact_emails' => 'عناوين البريد الإلكتروني للتواصل',
+    'contact_phones' => 'هواتف التواصل',
+    'add_email' => 'إضافة بريد إلكتروني',
+    'add_phone' => 'إضافة هاتف',
     'address_en' => 'العنوان (إنجليزي)',
     'address_ar' => 'العنوان (عربي)',
-    'linkedin_url' => 'رابط لينكدإن',
-    'twitter_url' => 'رابط تويتر / X',
+    'social_links' => 'روابط التواصل الاجتماعي',
     'footer_desc_en' => 'وصف التذييل (إنجليزي)',
     'footer_desc_ar' => 'وصف التذييل (عربي)',
 

@@ -8,9 +8,9 @@
                    class="inline-block mb-1"
                    aria-label="{{ __('common.site_name') }}">
                     <img
-                        src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
+                        src="{{ asset('images/logos/logo-one-tone.png') }}"
                         alt="{{ __('common.site_name') }}"
-                        class="h-9 md:h-12 w-auto"
+                        class="h-12 md:h-16 w-auto"
                         loading="lazy">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>
@@ -33,26 +33,28 @@
             <div>
                 <h3 class="ssbc-eyebrow mb-4">{{ __('footer.contact_heading') }}</h3>
                 <ul class="space-y-2 text-sm text-white/80">
-                    @if($siteSettings->contact_email)
-                        <li><a href="mailto:{{ $siteSettings->contact_email }}" class="hover:text-ssbc-gold">{{ $siteSettings->contact_email }}</a></li>
-                    @endif
-                    @if($siteSettings->contact_phone)
-                        <li>{{ $siteSettings->contact_phone }}</li>
-                    @endif
+                    @foreach($siteSettings->emails() as $email)
+                        <li><a href="mailto:{{ $email }}" class="hover:text-ssbc-gold">{{ $email }}</a></li>
+                    @endforeach
+                    @foreach($siteSettings->phones() as $phone)
+                        <li>{{ $phone }}</li>
+                    @endforeach
                     @if($siteSettings->address($locale))
                         <li class="whitespace-pre-line">{{ $siteSettings->address($locale) }}</li>
                     @endif
                 </ul>
 
-                @if($siteSettings->linkedin_url || $siteSettings->twitter_url)
-                <div class="mt-4 flex gap-4 text-sm">
-                    @if($siteSettings->linkedin_url)
-                        <a href="{{ $siteSettings->linkedin_url }}" class="text-white/80 hover:text-ssbc-gold" target="_blank" rel="noopener">LinkedIn</a>
-                    @endif
-                    @if($siteSettings->twitter_url)
-                        <a href="{{ $siteSettings->twitter_url }}" class="text-white/80 hover:text-ssbc-gold" target="_blank" rel="noopener">X / Twitter</a>
-                    @endif
-                </div>
+                @php $socials = $siteSettings->socials(); @endphp
+                @if (! empty($socials))
+                    <div class="mt-5 flex gap-3">
+                        @foreach ($socials as $s)
+                            <a href="{{ $s['url'] }}" target="_blank" rel="noopener"
+                               aria-label="{{ $s['label'] }}"
+                               class="text-white/80 hover:text-ssbc-gold transition-colors">
+                                @include('partials.social-icon', ['key' => $s['key'], 'class' => 'h-6 w-6'])
+                            </a>
+                        @endforeach
+                    </div>
                 @endif
             </div>
         </div>

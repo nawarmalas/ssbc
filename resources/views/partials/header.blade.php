@@ -31,15 +31,15 @@
                class="flex items-center shrink-0"
                aria-label="{{ __('common.site_name') }}">
                 <img
-                    src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
+                    src="{{ asset('images/logos/logo-one-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-9 md:h-12 w-auto"
+                    class="h-12 md:h-16 w-auto"
                     x-show="!scrolled"
                     loading="eager">
                 <img
-                    src="{{ asset('images/logos/logo-two-tone.jpeg') }}"
+                    src="{{ asset('images/logos/logo-two-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-9 md:h-12 w-auto"
+                    class="h-12 md:h-16 w-auto"
                     x-show="scrolled"
                     x-cloak
                     loading="eager">

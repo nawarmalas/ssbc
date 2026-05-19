@@ -13,28 +13,22 @@
 
 @php
     use App\Models\ContactSubmission;
-    use App\Models\JoinSubmission;
-    use App\Models\MembershipApplication;
     use App\Models\FormSubmission;
 
     $current = request()->route() ? request()->route()->getName() : '';
 
     $unread = [
-        'join'        => JoinSubmission::where('status', 'new')->count(),
         'contact'     => ContactSubmission::where('status', 'new')->count(),
-        'membership'  => MembershipApplication::where('status', 'new')->count(),
         'submissions' => FormSubmission::where('status', 'pending')->count(),
     ];
 
     $nav = [
-        ['key' => 'dashboard',   'route' => 'admin.dashboard',         'label' => __('admin.dashboard'), 'badge' => null],
-        ['key' => 'news',        'route' => 'admin.news.index',        'label' => __('admin.news'),      'badge' => null],
-        ['key' => 'forms',       'route' => 'admin.forms.builder',     'label' => 'Form Builder',         'badge' => null],
-        ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => 'Submissions',          'badge' => $unread['submissions']],
-        ['key' => 'join',        'route' => 'admin.join.index',        'label' => __('admin.join'),       'badge' => $unread['join']],
-        ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),    'badge' => $unread['contact']],
-        ['key' => 'membership',  'route' => 'admin.membership.index',  'label' => __('admin.membership'), 'badge' => $unread['membership']],
-        ['key' => 'settings',    'route' => 'admin.settings.edit',     'label' => __('admin.settings'),   'badge' => null],
+        ['key' => 'dashboard',   'route' => 'admin.dashboard',         'label' => __('admin.dashboard'),          'badge' => null],
+        ['key' => 'news',        'route' => 'admin.news.index',        'label' => __('admin.news'),               'badge' => null],
+        ['key' => 'forms',       'route' => 'admin.forms.builder',     'label' => __('admin.form_builder'),       'badge' => null],
+        ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'),        'badge' => $unread['submissions']],
+        ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),            'badge' => $unread['contact']],
+        ['key' => 'settings',    'route' => 'admin.settings.edit',     'label' => __('admin.site_customization'), 'badge' => null],
     ];
 @endphp
 
@@ -49,11 +43,11 @@
            lg:translate-x-0"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
-    <div class="h-16 flex items-center px-6 border-b border-white/10">
+    <div class="h-20 flex items-center px-6 border-b border-white/10">
         <a href="{{ route('admin.dashboard') }}" aria-label="{{ __('common.site_name') }}">
-            <img src="{{ asset('images/logos/logo-on-dark.jpeg') }}"
+            <img src="{{ asset('images/logos/logo-one-tone.png') }}"
                  alt="{{ __('common.site_name') }}"
-                 class="h-8 w-auto"
+                 class="h-12 w-auto"
                  loading="eager">
         </a>
     </div>
@@ -116,8 +110,28 @@
     {{-- Page content --}}
     <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
         @if (session('status'))
-            <div class="mb-6 border border-ssbc-green/30 bg-ssbc-green/5 px-4 py-3 text-sm text-ssbc-green">
-                {{ session('status') }}
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-cloak
+                 x-init="setTimeout(() => show = false, 4000)"
+                 x-transition.opacity.duration.300ms
+                 class="mb-6 flex items-center justify-between gap-3 border border-ssbc-green/30 bg-ssbc-green/5 px-4 py-3 text-sm text-ssbc-green">
+                <span>{{ session('status') }}</span>
+                <button type="button" @click="show = false" aria-label="Dismiss"
+                        class="text-ssbc-green/70 hover:text-ssbc-green text-lg leading-none">&times;</button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-cloak
+                 x-init="setTimeout(() => show = false, 6000)"
+                 x-transition.opacity.duration.300ms
+                 class="mb-6 flex items-center justify-between gap-3 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <span>{{ session('error') }}</span>
+                <button type="button" @click="show = false" aria-label="Dismiss"
+                        class="text-red-600 hover:text-red-800 text-lg leading-none">&times;</button>
             </div>
         @endif
 

@@ -23,22 +23,45 @@
                 </h2>
 
                 <dl class="space-y-6 text-sm">
-                    @if($siteSettings->contact_email)
+                    @if(count($emails = $siteSettings->emails()))
                         <div>
                             <dt class="ssbc-eyebrow mb-1">{{ __('contact.email_label') }}</dt>
-                            <dd><a href="mailto:{{ $siteSettings->contact_email }}" class="text-ssbc-dark hover:text-ssbc-gold">{{ $siteSettings->contact_email }}</a></dd>
+                            <dd class="space-y-1">
+                                @foreach($emails as $email)
+                                    <div><a href="mailto:{{ $email }}" class="text-ssbc-dark hover:text-ssbc-gold">{{ $email }}</a></div>
+                                @endforeach
+                            </dd>
                         </div>
                     @endif
-                    @if($siteSettings->contact_phone)
+                    @if(count($phones = $siteSettings->phones()))
                         <div>
                             <dt class="ssbc-eyebrow mb-1">{{ __('contact.phone_label') }}</dt>
-                            <dd class="text-ssbc-dark">{{ $siteSettings->contact_phone }}</dd>
+                            <dd class="text-ssbc-dark space-y-1">
+                                @foreach($phones as $phone)
+                                    <div>{{ $phone }}</div>
+                                @endforeach
+                            </dd>
                         </div>
                     @endif
                     @if($siteSettings->address($locale))
                         <div>
                             <dt class="ssbc-eyebrow mb-1">{{ __('contact.address_label') }}</dt>
                             <dd class="text-ssbc-dark whitespace-pre-line">{{ $siteSettings->address($locale) }}</dd>
+                        </div>
+                    @endif
+                    @php $socials = $siteSettings->socials(); @endphp
+                    @if (! empty($socials))
+                        <div>
+                            <dt class="ssbc-eyebrow mb-2">{{ __('contact.follow_us_label') }}</dt>
+                            <dd class="flex gap-3">
+                                @foreach ($socials as $s)
+                                    <a href="{{ $s['url'] }}" target="_blank" rel="noopener"
+                                       aria-label="{{ $s['label'] }}"
+                                       class="text-ssbc-green hover:text-ssbc-gold transition-colors">
+                                        @include('partials.social-icon', ['key' => $s['key'], 'class' => 'h-6 w-6'])
+                                    </a>
+                                @endforeach
+                            </dd>
                         </div>
                     @endif
                 </dl>

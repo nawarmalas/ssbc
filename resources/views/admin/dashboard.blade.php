@@ -6,14 +6,13 @@
 @section('content')
     @php
         $cards = [
-            ['label' => __('admin.published_posts'),  'value' => $stats['published_posts'],  'href' => route('admin.news.index')],
-            ['label' => __('admin.new_join'),         'value' => $stats['new_join'],         'href' => route('admin.join.index')],
-            ['label' => __('admin.new_contact'),      'value' => $stats['new_contact'],      'href' => route('admin.contact.index')],
-            ['label' => __('admin.new_membership'),   'value' => $stats['new_membership'],   'href' => route('admin.membership.index')],
+            ['label' => __('admin.published_posts'),     'value' => $stats['published_posts'],     'href' => route('admin.news.index')],
+            ['label' => __('admin.pending_submissions'), 'value' => $stats['pending_submissions'], 'href' => route('admin.submissions.index')],
+            ['label' => __('admin.new_contact'),         'value' => $stats['new_contact'],         'href' => route('admin.contact.index')],
         ];
     @endphp
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
         @foreach($cards as $card)
             <a href="{{ $card['href'] }}" class="ssbc-admin-stat-card">
                 <p class="ssbc-admin-stat-label">{{ $card['label'] }}</p>

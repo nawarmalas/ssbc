@@ -9,6 +9,7 @@ return [
     'email_label' => 'البريد الإلكتروني',
     'phone_label' => 'الهاتف',
     'address_label' => 'العنوان',
+    'follow_us_label' => 'تابعنا',
     'form_heading' => 'إرسال رسالة',
     'name' => 'الاسم',
     'email' => 'البريد الإلكتروني',

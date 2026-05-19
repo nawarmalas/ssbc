@@ -4,8 +4,6 @@ use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormBuilderController;
-use App\Http\Controllers\Admin\JoinController as AdminJoinController;
-use App\Http\Controllers\Admin\MembershipController as AdminMembershipController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SubmissionController;
@@ -73,23 +71,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('news', AdminNewsController::class)->except(['show']);
 
-        Route::get('/join', [AdminJoinController::class, 'index'])->name('join.index');
-        Route::get('/join/{joinSubmission}', [AdminJoinController::class, 'show'])->name('join.show');
-        Route::patch('/join/{joinSubmission}', [AdminJoinController::class, 'update'])->name('join.update');
-        Route::delete('/join/{joinSubmission}', [AdminJoinController::class, 'destroy'])->name('join.destroy');
-
         Route::get('/contact', [AdminContactController::class, 'index'])->name('contact.index');
         Route::get('/contact/{contactSubmission}', [AdminContactController::class, 'show'])->name('contact.show');
         Route::patch('/contact/{contactSubmission}', [AdminContactController::class, 'update'])->name('contact.update');
         Route::delete('/contact/{contactSubmission}', [AdminContactController::class, 'destroy'])->name('contact.destroy');
 
-        Route::get('/membership', [AdminMembershipController::class, 'index'])->name('membership.index');
-        Route::get('/membership/{membershipApplication}', [AdminMembershipController::class, 'show'])->name('membership.show');
-        Route::patch('/membership/{membershipApplication}', [AdminMembershipController::class, 'update'])->name('membership.update');
-        Route::delete('/membership/{membershipApplication}', [AdminMembershipController::class, 'destroy'])->name('membership.destroy');
-
         Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::patch('/settings/home', [SettingsController::class, 'updateHome'])->name('settings.home.update');
+        Route::patch('/settings/about', [SettingsController::class, 'updateAbout'])->name('settings.about.update');
+        Route::post('/settings/hero-image', [SettingsController::class, 'updateHeroImage'])->name('settings.hero.update');
+        Route::delete('/settings/hero-image', [SettingsController::class, 'deleteHeroImage'])->name('settings.hero.destroy');
 
         // Form Builder
         Route::get('/forms/join-us', [FormBuilderController::class, 'index'])->name('forms.builder');

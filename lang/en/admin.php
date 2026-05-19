@@ -12,16 +12,19 @@ return [
 
     'dashboard' => 'Dashboard',
     'news' => 'News',
-    'join' => 'Join',
+    'form_builder' => 'Form Builder',
+    'submissions' => 'Submissions',
     'contact' => 'Contact',
-    'membership' => 'Membership',
     'settings' => 'Settings',
+    'site_customization' => 'Site Customization',
 
     'overview' => 'Overview',
     'published_posts' => 'Published Posts',
-    'new_join' => 'New Join Submissions',
+    'pending_submissions' => 'Pending Submissions',
     'new_contact' => 'New Contact Submissions',
-    'new_membership' => 'New Membership Applications',
+
+    'type_submission' => 'Submission',
+    'type_contact' => 'Contact',
 
     'create' => 'Create',
     'edit' => 'Edit',
@@ -80,10 +83,13 @@ return [
 
     'contact_email' => 'Contact Email',
     'contact_phone' => 'Contact Phone',
+    'contact_emails' => 'Contact Emails',
+    'contact_phones' => 'Contact Phones',
+    'add_email' => 'Add email',
+    'add_phone' => 'Add phone',
     'address_en' => 'Address (English)',
     'address_ar' => 'Address (Arabic)',
-    'linkedin_url' => 'LinkedIn URL',
-    'twitter_url' => 'Twitter / X URL',
+    'social_links' => 'Social Links',
     'footer_desc_en' => 'Footer description (English)',
     'footer_desc_ar' => 'Footer description (Arabic)',
 
