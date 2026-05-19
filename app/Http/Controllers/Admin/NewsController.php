@@ -76,6 +76,7 @@ class NewsController extends Controller
     {
         $this->authorizeSubadminDraftAccess($news);
 
+        $wasPublished = $news->status === 'published';
         $data = $this->validatePost($request);
 
         if ($request->user()?->isNewsSubadmin()) {
@@ -106,8 +107,10 @@ class NewsController extends Controller
             'updated_by_user_id' => $request->user()?->id,
         ]);
 
-        if ($data['status'] === 'published' && ! $news->published_at) {
-            $news->published_at = $data['published_at'] ?? now();
+        if ($data['status'] === 'published' && ! $wasPublished) {
+            $news->published_at = $request->filled('published_at') ? $data['published_at'] : now();
+        } elseif ($data['status'] === 'published' && ! $news->published_at) {
+            $news->published_at = now();
         } elseif ($data['status'] === 'draft' && empty($data['published_at'])) {
             $news->published_at = null;
         } elseif (! empty($data['published_at'])) {

@@ -36,6 +36,8 @@ return [
 
     'status' => 'Status',
     'status_new' => 'New',
+    'status_pending' => 'Pending',
+    'status_under_review' => 'Under review',
     'status_reviewed' => 'Reviewed',
     'status_contacted' => 'Contacted',
     'status_approved' => 'Approved',

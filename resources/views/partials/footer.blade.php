@@ -10,7 +10,7 @@
                     <img
                         src="{{ asset('images/logos/logo-one-tone.png') }}"
                         alt="{{ __('common.site_name') }}"
-                        class="h-12 md:h-16 w-auto"
+                        class="h-16 md:h-24 w-auto"
                         loading="lazy">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>

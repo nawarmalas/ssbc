@@ -85,7 +85,10 @@
             <div>
                 <label class="ssbc-admin-label" for="published_at">{{ __('admin.news_published_at') }}</label>
                 <input id="published_at" name="published_at" type="datetime-local" class="ssbc-admin-input"
-                       value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
+                       value="{{ old('published_at', $post->status === 'published' && $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
+                <p class="text-xs text-ssbc-sage mt-1">
+                    Leave blank when publishing to make the post visible immediately. Future dates will keep it hidden until that time.
+                </p>
             </div>
         @endif
     </div>

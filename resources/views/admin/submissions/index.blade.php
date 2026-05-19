@@ -9,10 +9,10 @@
        class="ssbc-admin-btn-primary">Export Excel</a>
 </div>
 
-<form method="GET" class="flex flex-wrap gap-3 items-end mb-6">
-    <div>
+<form method="GET" class="flex flex-wrap gap-4 items-end mb-6">
+    <div class="w-full sm:w-80 lg:w-96">
         <label class="ssbc-admin-label">Form</label>
-        <select name="form_id" class="ssbc-admin-input">
+        <select name="form_id" class="ssbc-admin-input min-w-0" onchange="this.form.submit()">
             <option value="">All forms</option>
             @foreach($forms as $form)
                 <option value="{{ $form->form_id }}" @selected(request('form_id') === $form->form_id)>
@@ -21,11 +21,11 @@
             @endforeach
         </select>
     </div>
-    <div>
+    <div class="w-40">
         <label class="ssbc-admin-label">From</label>
         <input type="date" name="from" value="{{ request('from') }}" class="ssbc-admin-input">
     </div>
-    <div>
+    <div class="w-40">
         <label class="ssbc-admin-label">To</label>
         <input type="date" name="to" value="{{ request('to') }}" class="ssbc-admin-input">
     </div>

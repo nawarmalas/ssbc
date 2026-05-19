@@ -168,16 +168,40 @@
 
                                             {{-- date --}}
                                             <template x-if="field.field_type === 'date'">
-                                                <input
-                                                    :id="'f_' + field.id + '_' + (ri-1)"
-                                                    type="date"
-                                                    :name="'answers[' + field.id + '][' + (ri-1) + ']'"
-                                                    :required="step === sIdx && field.is_required && ri === 1"
-                                                    :max="dateMaxFor(field)"
-                                                    x-model="answers[field.id + '_' + (ri-1)]"
-                                                    @blur="validateField(field, ri-1)"
-                                                    class="ssbc-input"
-                                                >
+                                                <div>
+                                                    <input type="hidden"
+                                                           :name="'answers[' + field.id + '][' + (ri-1) + ']'"
+                                                           :value="dateValue(field, ri-1)">
+                                                    <div class="grid grid-cols-3 gap-3">
+                                                        <select class="ssbc-input"
+                                                                x-model="dateParts[dateKey(field, ri-1)].month"
+                                                                @change="validateField(field, ri-1)"
+                                                                :aria-label="'Month for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">Month</option>
+                                                            <template x-for="month in months" :key="month.value">
+                                                                <option :value="month.value" x-text="month.label"></option>
+                                                            </template>
+                                                        </select>
+                                                        <select class="ssbc-input"
+                                                                x-model="dateParts[dateKey(field, ri-1)].day"
+                                                                @change="validateField(field, ri-1)"
+                                                                :aria-label="'Day for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">Day</option>
+                                                            <template x-for="day in dateDaysFor(field, ri-1)" :key="day">
+                                                                <option :value="day" x-text="day"></option>
+                                                            </template>
+                                                        </select>
+                                                        <select class="ssbc-input"
+                                                                x-model="dateParts[dateKey(field, ri-1)].year"
+                                                                @change="validateField(field, ri-1)"
+                                                                :aria-label="'Year for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">Year</option>
+                                                            <template x-for="year in dateYearsFor(field)" :key="year">
+                                                                <option :value="year" x-text="year"></option>
+                                                            </template>
+                                                        </select>
+                                                    </div>
+                                                </div>
                                             </template>
 
                                             {{-- select --}}
@@ -338,6 +362,7 @@ function dynamicForm(sectionsJson) {
         step: 0,
         activeRepeat: 0,
         answers: {},
+        dateParts: {},
         checkboxAnswers: {},
         repeats: {},
         fileNames: {},
@@ -346,10 +371,17 @@ function dynamicForm(sectionsJson) {
         submitting: false,
         submitError: null,
         firstErrorStep: null,
+        months: [
+            { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
+            { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
+            { value: 7, label: 'Jul' }, { value: 8, label: 'Aug' }, { value: 9, label: 'Sep' },
+            { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' },
+        ],
 
         init() {
             sections.forEach(s => {
                 if (s.is_repeatable) this.repeats[s.id] = 1;
+                this.initDatePartsForSection(s, 1);
             });
         },
 
@@ -368,12 +400,54 @@ function dynamicForm(sectionsJson) {
             return new Date().toISOString().slice(0, 10);
         },
 
+        dateKey(field, repeatIndex) {
+            return field.id + '_' + repeatIndex;
+        },
+
+        initDatePartsForSection(section, count) {
+            for (const field of section.fields || []) {
+                if (field.field_type !== 'date') continue;
+                for (let r = 0; r < count; r++) {
+                    const key = this.dateKey(field, r);
+                    if (!this.dateParts[key]) {
+                        this.dateParts[key] = { month: '', day: '', year: '' };
+                    }
+                }
+            }
+        },
+
+        dateValue(field, repeatIndex) {
+            const parts = this.dateParts[this.dateKey(field, repeatIndex)] || {};
+            if (!parts.year || !parts.month || !parts.day) return '';
+            if (Number(parts.day) > this.dateDaysFor(field, repeatIndex).length) return '';
+            const month = String(parts.month).padStart(2, '0');
+            const day = String(parts.day).padStart(2, '0');
+            return `${parts.year}-${month}-${day}`;
+        },
+
+        dateDaysFor(field, repeatIndex) {
+            const parts = this.dateParts[this.dateKey(field, repeatIndex)] || {};
+            const year = Number(parts.year || new Date().getFullYear());
+            const month = Number(parts.month || 1);
+            const days = new Date(year, month, 0).getDate();
+            return Array.from({ length: days }, (_, i) => i + 1);
+        },
+
+        dateYearsFor(field) {
+            const label = (field.label_en || '').toLowerCase();
+            const currentYear = new Date().getFullYear();
+            const maxYear = (label.includes('birth') || label.includes('dob')) ? currentYear - 18 : currentYear;
+            const minYear = maxYear - 100;
+            return Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+        },
+
         addRepeat(section) {
             if (!section?.is_repeatable) return;
             const current = this.repeats[section.id] || 1;
             if (current < section.max_repeats) {
                 this.repeats[section.id] = current + 1;
                 this.activeRepeat = current;
+                this.initDatePartsForSection(section, current + 1);
             }
         },
 
@@ -422,7 +496,7 @@ function dynamicForm(sectionsJson) {
         // Inline format check for one field — runs on blur. Sets stepErrors[key].
         validateField(field, repeatIndex) {
             const key = field.id + '_' + repeatIndex;
-            const val = this.answers[key];
+            const val = field.field_type === 'date' ? this.dateValue(field, repeatIndex) : this.answers[key];
             if (!val) { delete this.stepErrors[key]; return true; }
 
             if (field.field_type === 'email') {
@@ -502,7 +576,7 @@ function dynamicForm(sectionsJson) {
                             valid = false;
                         }
                     } else {
-                        const val = this.answers[key];
+                        const val = field.field_type === 'date' ? this.dateValue(field, r) : this.answers[key];
                         if (requiredHere && (val === undefined || val === null || val === '')) {
                             this.stepErrors[key] = 'This field is required.';
                             valid = false;

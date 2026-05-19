@@ -1,17 +1,22 @@
 @php
     $locale = app()->getLocale();
-    $altLocale = $locale === 'ar' ? 'en' : 'ar';
     $currentRoute = request()->route() ? request()->route()->getName() : null;
     $currentRouteParams = request()->route() ? request()->route()->parameters() : [];
 
-    $altUrl = '/'.$altLocale;
-    if ($currentRoute) {
-        try {
-            $altUrl = route($currentRoute, array_merge($currentRouteParams, ['locale' => $altLocale]));
-        } catch (\Throwable $e) {
-            $altUrl = '/'.$altLocale;
+    $localeUrl = function (string $targetLocale) use ($currentRoute, $currentRouteParams) {
+        $url = '/'.$targetLocale;
+        if ($currentRoute) {
+            try {
+                $url = route($currentRoute, array_merge($currentRouteParams, ['locale' => $targetLocale]));
+            } catch (\Throwable $e) {
+                $url = '/'.$targetLocale;
+            }
         }
-    }
+        if (request()->query()) {
+            $url .= (str_contains($url, '?') ? '&' : '?').http_build_query(request()->query());
+        }
+        return $url;
+    };
 @endphp
 
 <header
@@ -24,7 +29,7 @@
     class="sticky top-0 z-40 transition-all duration-300">
 
     <div class="ssbc-container">
-        <div class="flex items-center justify-between h-16">
+        <div class="flex items-center justify-between h-20">
 
             {{-- Logo — swaps variant based on scrolled state (dark green vs white header) --}}
             <a href="{{ route('home', ['locale' => $locale]) }}"
@@ -33,13 +38,13 @@
                 <img
                     src="{{ asset('images/logos/logo-one-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-12 md:h-16 w-auto"
+                    class="h-16 md:h-20 w-auto"
                     x-show="!scrolled"
                     loading="eager">
                 <img
                     src="{{ asset('images/logos/logo-two-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-12 md:h-16 w-auto"
+                    class="h-16 md:h-20 w-auto"
                     x-show="scrolled"
                     x-cloak
                     loading="eager">
@@ -67,7 +72,7 @@
                 @if($locale === 'en')
                     <span class="text-ssbc-gold font-semibold">EN</span>
                 @else
-                    <a href="/en"
+                    <a href="{{ $localeUrl('en') }}"
                        class="transition-colors duration-300"
                        :class="scrolled ? 'text-ssbc-sage hover:text-ssbc-green' : 'text-white/70 hover:text-white'">EN</a>
                 @endif
@@ -76,7 +81,7 @@
                 @if($locale === 'ar')
                     <span class="text-ssbc-gold font-semibold">AR</span>
                 @else
-                    <a href="{{ $altUrl }}"
+                    <a href="{{ $localeUrl('ar') }}"
                        class="transition-colors duration-300"
                        :class="scrolled ? 'text-ssbc-sage hover:text-ssbc-green' : 'text-white/70 hover:text-white'">AR</a>
                 @endif
@@ -114,14 +119,14 @@
                 @if($locale === 'en')
                     <span class="text-ssbc-gold font-semibold">EN</span>
                 @else
-                    <a href="/en"
+                    <a href="{{ $localeUrl('en') }}"
                        class="transition-colors duration-300"
                        :class="scrolled ? 'text-ssbc-sage' : 'text-white/70'">EN</a>
                 @endif
                 @if($locale === 'ar')
                     <span class="text-ssbc-gold font-semibold">AR</span>
                 @else
-                    <a href="/ar"
+                    <a href="{{ $localeUrl('ar') }}"
                        class="transition-colors duration-300"
                        :class="scrolled ? 'text-ssbc-sage' : 'text-white/70'">AR</a>
                 @endif

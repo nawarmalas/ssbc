@@ -2,6 +2,8 @@
 
 @section('title', 'Form Builder — Join Us')
 
+@section('page_title', 'Form Builder - ' . $formDefinition->title_en)
+
 @section('content')
 <div class="w-12 h-px bg-ssbc-gold mb-4"></div>
 <div class="flex items-center justify-between mb-8">
@@ -88,6 +90,10 @@
             <h2 class="text-lg font-bold text-ssbc-green mb-5"
                 x-text="editingSection?.id ? 'Edit Section' : 'Add Section'"></h2>
 
+            <div x-show="sectionError" x-cloak class="mb-4 border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                <span x-text="sectionError"></span>
+            </div>
+
             <div class="space-y-4">
                 <div>
                     <label class="ssbc-label">Title (English) *</label>
@@ -122,6 +128,10 @@
         <div class="bg-white w-full max-w-2xl p-6 shadow-xl my-8" @click.outside="fieldModalOpen = false">
             <h2 class="text-lg font-bold text-ssbc-green mb-5"
                 x-text="editingField?.id ? 'Edit Field' : 'Add Field'"></h2>
+
+            <div x-show="fieldError" x-cloak class="mb-4 border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                <span x-text="fieldError"></span>
+            </div>
 
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -243,6 +253,8 @@ function formBuilder() {
         sections: @json(json_decode($sectionsJson)),
         openSections: [],
         saving: false,
+        sectionError: null,
+        fieldError: null,
 
         sectionModalOpen: false,
         editingSection: null,
@@ -313,27 +325,29 @@ function formBuilder() {
 
         async saveSection() {
             this.saving = true;
+            this.sectionError = null;
             const url = this.editingSection
                 ? `${this.endpoints.sections}/${this.editingSection.id}`
                 : this.endpoints.sections;
             const method = this.editingSection ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
-                body: JSON.stringify(this.sectionForm),
-            }).then(r => r.json());
+            try {
+                const res = await this.requestJson(url, method, this.sectionForm);
 
-            if (res.success) {
-                if (this.editingSection) {
-                    const s = this.sections.find(s => s.id === this.editingSection.id);
-                    if (s) Object.assign(s, res.data);
-                } else {
-                    this.sections.push({ ...res.data, all_fields: [] });
+                if (res.success) {
+                    if (this.editingSection) {
+                        const s = this.sections.find(s => s.id === this.editingSection.id);
+                        if (s) Object.assign(s, res.data);
+                    } else {
+                        this.sections.push({ ...res.data, all_fields: [] });
+                    }
+                    this.sectionModalOpen = false;
                 }
+            } catch (error) {
+                this.sectionError = error.message || 'Unable to save section.';
+            } finally {
+                this.saving = false;
             }
-            this.saving = false;
-            this.sectionModalOpen = false;
         },
 
         confirmDeleteSection(section) {
@@ -374,6 +388,7 @@ function formBuilder() {
         openFieldModal(field, sectionId) {
             this.editingField = field;
             this.editingFieldSectionId = sectionId;
+            this.fieldError = null;
             this.fieldForm = field ? {
                 section_id: field.section_id,
                 label_en: field.label_en, label_ar: field.label_ar,
@@ -410,32 +425,95 @@ function formBuilder() {
         },
 
         async saveField() {
+            const payload = this.normalizedFieldPayload();
+            const clientError = this.validateFieldPayload(payload);
+            if (clientError) {
+                this.fieldError = clientError;
+                return;
+            }
+
             this.saving = true;
+            this.fieldError = null;
             const url = this.editingField
                 ? `${this.endpoints.fields}/${this.editingField.id}`
                 : this.endpoints.fields;
             const method = this.editingField ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
-                body: JSON.stringify(this.fieldForm),
-            }).then(r => r.json());
+            try {
+                const res = await this.requestJson(url, method, payload);
 
-            if (res.success) {
-                const section = this.sections.find(s => s.id === this.editingFieldSectionId);
-                if (section) {
-                    if (this.editingField) {
-                        const idx = section.all_fields.findIndex(f => f.id === this.editingField.id);
-                        if (idx >= 0) section.all_fields[idx] = res.data;
-                    } else {
-                        section.all_fields.push(res.data);
-                        this.$nextTick(() => this.initFieldSortable(section.id));
+                if (res.success) {
+                    const section = this.sections.find(s => s.id === this.editingFieldSectionId);
+                    if (section) {
+                        if (this.editingField) {
+                            const idx = section.all_fields.findIndex(f => f.id === this.editingField.id);
+                            if (idx >= 0) section.all_fields[idx] = res.data;
+                        } else {
+                            section.all_fields.push(res.data);
+                            this.$nextTick(() => this.initFieldSortable(section.id));
+                        }
                     }
+                    this.fieldModalOpen = false;
+                }
+            } catch (error) {
+                this.fieldError = error.message || 'Unable to save field.';
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        normalizedFieldPayload() {
+            const payload = JSON.parse(JSON.stringify(this.fieldForm));
+            if (Array.isArray(payload.options)) {
+                payload.options = payload.options
+                    .map(opt => ({
+                        label_en: (opt.label_en || '').trim(),
+                        label_ar: (opt.label_ar || '').trim(),
+                        value: (opt.value || '').trim(),
+                    }))
+                    .filter(opt => opt.label_en || opt.label_ar || opt.value);
+            }
+            return payload;
+        },
+
+        validateFieldPayload(payload) {
+            if (!payload.label_en?.trim() || !payload.label_ar?.trim()) {
+                return 'Both English and Arabic labels are required.';
+            }
+            if (['select','radio','checkbox_group'].includes(payload.field_type)) {
+                if (!payload.options?.length) {
+                    return 'Add at least one option for this field type.';
+                }
+                const invalid = payload.options.find(opt => !opt.label_en || !opt.label_ar || !opt.value);
+                if (invalid) {
+                    return 'Each option needs an English label, Arabic label, and value.';
                 }
             }
-            this.saving = false;
-            this.fieldModalOpen = false;
+            return null;
+        },
+
+        async requestJson(url, method, payload = null) {
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': this.csrf,
+                },
+                body: payload ? JSON.stringify(payload) : null,
+            });
+
+            const contentType = response.headers.get('content-type') || '';
+            const data = contentType.includes('application/json') ? await response.json() : null;
+
+            if (!response.ok) {
+                if (data?.errors) {
+                    throw new Error(Object.values(data.errors).flat().join(' '));
+                }
+                throw new Error(data?.message || 'The server could not save this change.');
+            }
+
+            return data || {};
         },
 
         confirmDeleteField(field, section) {

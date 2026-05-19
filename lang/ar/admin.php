@@ -36,6 +36,8 @@ return [
 
     'status' => 'الحالة',
     'status_new' => 'جديد',
+    'status_pending' => 'قيد الانتظار',
+    'status_under_review' => 'قيد المراجعة',
     'status_reviewed' => 'تمت المراجعة',
     'status_contacted' => 'تم التواصل',
     'status_approved' => 'مُعتمد',

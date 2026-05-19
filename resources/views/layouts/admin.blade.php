@@ -48,11 +48,11 @@
            lg:translate-x-0"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
-    <div class="h-20 flex items-center px-6 border-b border-white/10">
+    <div class="h-24 flex items-center px-6 border-b border-white/10">
         <a href="{{ auth()->user()?->isNewsSubadmin() ? route('admin.news.index') : route('admin.dashboard') }}" aria-label="{{ __('common.site_name') }}">
             <img src="{{ asset('images/logos/logo-one-tone.png') }}"
                  alt="{{ __('common.site_name') }}"
-                 class="h-12 w-auto"
+                 class="h-16 w-auto"
                  loading="eager">
         </a>
     </div>
