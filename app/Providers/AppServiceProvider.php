@@ -19,5 +19,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('siteSettings', SiteSetting::current());
             $view->with('currentLocale', app()->getLocale());
         });
+
+        \App\Models\Sector::observe(\App\Observers\SectorObserver::class);
     }
 }
