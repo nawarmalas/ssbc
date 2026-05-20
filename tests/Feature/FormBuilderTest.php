@@ -64,8 +64,9 @@ class FormBuilderTest extends TestCase
 
         $form = FormService::getActiveForm('join-us');
 
-        $this->assertCount(1, $form);
-        $this->assertCount(1, $form->first()->fields);
+        $personal = $form->firstWhere('id', $section->id);
+        $this->assertNotNull($personal);
+        $this->assertCount(1, $personal->fields);
     }
 
     public function test_get_active_form_is_cached(): void
@@ -77,11 +78,12 @@ class FormBuilderTest extends TestCase
             'order_index' => 0,
         ]);
 
-        FormService::getActiveForm('join-us');
+        $before = FormService::getActiveForm('join-us');
         FormSection::query()->delete();
         $form = FormService::getActiveForm('join-us');
 
-        $this->assertCount(1, $form);
+        $this->assertCount($before->count(), $form);
+        $this->assertGreaterThanOrEqual(1, $form->count());
     }
 
     public function test_admin_can_create_section(): void

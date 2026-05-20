@@ -31,12 +31,26 @@ class JoinFormTest extends TestCase
             'field_type' => 'email', 'is_required' => true, 'is_active' => true, 'order_index' => 1,
         ]);
 
+        $answers = [
+            $nameField->id  => [0 => 'Ahmad Al-Souri'],
+            $emailField->id => [0 => 'ahmad@example.com'],
+        ];
+
+        // Section 3 (seeded by data migration) has required checkbox_group fields.
+        $section3Required = FormField::whereHas('section', fn ($q) => $q
+            ->where('form_id', 'join-us')
+            ->where('title_en', 'Section 3: Interests and Cooperation'))
+            ->where('is_required', true)
+            ->get();
+
+        foreach ($section3Required as $field) {
+            $firstOption = $field->options[0]['value'] ?? 'value';
+            $answers[$field->id] = [0 => [$firstOption]];
+        }
+
         $response = $this->post('/en/join', [
             '_token' => csrf_token(),
-            'answers' => [
-                $nameField->id  => [0 => 'Ahmad Al-Souri'],
-                $emailField->id => [0 => 'ahmad@example.com'],
-            ],
+            'answers' => $answers,
             '_repeats' => [],
         ]);
 
