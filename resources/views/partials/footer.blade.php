@@ -2,15 +2,15 @@
 <footer class="bg-ssbc-green text-white mt-auto">
     <div class="w-full h-px bg-ssbc-gold"></div>
     <div class="ssbc-container py-14">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div class="md:col-span-2">
                 <a href="{{ route('home', ['locale' => $locale]) }}"
                    class="inline-block mb-1"
                    aria-label="{{ __('common.site_name') }}">
                     <img
                         src="{{ asset('images/logos/logo-one-tone.png') }}"
                         alt="{{ __('common.site_name') }}"
-                        class="h-16 md:h-24 w-auto"
+                        class="h-16 md:h-20 w-auto"
                         loading="lazy">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>
@@ -32,7 +32,7 @@
 
             <div>
                 <h3 class="ssbc-eyebrow mb-4">{{ __('footer.contact_heading') }}</h3>
-                <ul class="space-y-2 text-sm text-white/80">
+                <ul class="space-y-3 text-sm text-white/80">
                     @foreach($siteSettings->emails() as $email)
                         <li><a href="mailto:{{ $email }}" class="hover:text-ssbc-gold">{{ $email }}</a></li>
                     @endforeach

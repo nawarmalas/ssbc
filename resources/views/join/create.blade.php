@@ -18,10 +18,12 @@
 @section('content')
 
 @include('partials.page-hero', [
-    'eyebrow' => __('join.hero.eyebrow'),
-    'heading' => $pageTitle,
-    'body'    => $pageIntro,
-    'padding' => 'py-12 lg:py-16',
+    'eyebrow'      => __('join.hero.eyebrow'),
+    'heading'      => $pageTitle,
+    'body'         => $pageIntro,
+    'padding'      => 'py-8 lg:py-8',
+    'headingClass' => 'max-w-4xl',
+    'bodyClass'    => 'max-w-4xl',
 ])
 
 <section class="bg-white">
@@ -29,10 +31,10 @@
         <div class="max-w-3xl mx-auto">
 
             {{-- Institutional header --}}
-            <div class="flex flex-col items-center mb-12 text-center">
+            <div class="flex flex-col items-center mb-8 text-center">
                 <img src="{{ asset('images/logos/logo-two-tone.png') }}"
                      alt="{{ __('common.site_name') }}"
-                     class="h-24 md:h-32 w-auto mb-4" loading="lazy">
+                     class="h-16 md:h-20 w-auto mb-4" loading="lazy">
                 <div class="w-20 h-px bg-ssbc-gold"></div>
             </div>
 
