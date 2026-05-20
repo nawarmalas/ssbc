@@ -52,6 +52,9 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->call(FormSeeder::class);
+        $this->call([
+            FormSeeder::class,
+            SectorSeeder::class,
+        ]);
     }
 }

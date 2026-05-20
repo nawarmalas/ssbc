@@ -55,6 +55,11 @@ class SettingsController extends Controller
                 ],
             ],
         ],
+        'Sectors' => [
+            'sectors.eyebrow' => ['label' => 'Eyebrow', 'type' => 'text'],
+            'sectors.heading' => ['label' => 'Heading', 'type' => 'text'],
+            'sectors.body'    => ['label' => 'Body',    'type' => 'textarea'],
+        ],
         'News block' => [
             'news.eyebrow'  => ['label' => 'Eyebrow',          'type' => 'text'],
             'news.heading'  => ['label' => 'Heading',          'type' => 'text'],

@@ -40,6 +40,7 @@
         $nav[] = ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),      'badge' => $unread['contact']];
         $nav[] = ['key' => 'users',       'route' => 'admin.users.index',       'label' => 'Admin Users',            'badge' => null];
         $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'أعضاء المجلس', 'badge' => null];
+        $nav[] = ['key' => 'sectors', 'route' => 'admin.sectors.index', 'label' => 'القطاعات / Sectors', 'badge' => null];
     }
     if ($authUser?->canCustomizeSite()) {
         $nav[] = ['key' => 'settings', 'route' => 'admin.settings.edit', 'label' => __('admin.site_customization'), 'badge' => null];
