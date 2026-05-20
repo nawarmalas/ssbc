@@ -155,6 +155,10 @@ class FormBuilderController extends Controller
     {
         $this->ensureFieldBelongsToForm($field, $formDefinition);
 
+        if ($field->is_system_managed) {
+            return response()->json(['success' => false, 'error' => 'System-managed fields cannot be deleted.'], 422);
+        }
+
         $field->delete();
         FormService::invalidateCache($formDefinition->form_id);
 
@@ -207,6 +211,13 @@ class FormBuilderController extends Controller
             if (isset($data[$key])) {
                 $data[$key] = strip_tags($data[$key]);
             }
+        }
+
+        // System-managed fields: only allow safe keys to be updated
+        if ($existing && $existing->is_system_managed) {
+            $allowed = ['label_en', 'label_ar', 'placeholder_en', 'placeholder_ar',
+                        'is_required', 'is_active', 'order_index', 'section_id'];
+            $data = array_intersect_key($data, array_flip($allowed));
         }
 
         return $data;

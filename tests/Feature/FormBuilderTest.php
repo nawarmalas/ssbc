@@ -149,4 +149,75 @@ class FormBuilderTest extends TestCase
 
         $this->assertDatabaseMissing('form_fields', ['id' => $fieldId]);
     }
+
+    public function test_cannot_update_options_on_system_managed_field(): void
+    {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $formDef = \App\Models\FormDefinition::where('form_id', 'join-us')->first()
+            ?? \App\Models\FormDefinition::factory()->create(['form_id' => 'join-us', 'title_en' => 'Join Us', 'title_ar' => 'انضم إلينا']);
+
+        $section = \App\Models\FormSection::create([
+            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'س',
+            'is_repeatable' => false, 'order_index' => 0,
+        ]);
+        $field = \App\Models\FormField::create([
+            'section_id'        => $section->id,
+            'code'              => 'sectors_of_operation',
+            'label_en'          => 'Sectors of Operation',
+            'label_ar'          => 'قطاعات العمل',
+            'field_type'        => 'checkbox_group',
+            'is_required'       => true,
+            'is_active'         => true,
+            'is_system_managed' => true,
+            'order_index'       => 0,
+            'options'           => [['value' => 'old', 'label_en' => 'Old', 'label_ar' => 'قديم']],
+        ]);
+
+        $this->actingAs($admin)->putJson(
+            route('admin.forms.fields.update', [$formDef, $field]),
+            [
+                'section_id'  => $section->id,
+                'label_en'    => 'Updated Label',
+                'label_ar'    => 'تسمية محدثة',
+                'field_type'  => 'radio',
+                'is_required' => true,
+                'is_active'   => true,
+                'options'     => [['value' => 'new', 'label_en' => 'New', 'label_ar' => 'جديد']],
+            ]
+        )->assertOk();
+
+        $field->refresh();
+        $this->assertSame('Updated Label', $field->label_en);
+        $this->assertSame('checkbox_group', $field->field_type);
+        $this->assertSame('old', $field->options[0]['value']);
+    }
+
+    public function test_cannot_delete_system_managed_field(): void
+    {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $formDef = \App\Models\FormDefinition::where('form_id', 'join-us')->first()
+            ?? \App\Models\FormDefinition::factory()->create(['form_id' => 'join-us', 'title_en' => 'Join Us', 'title_ar' => 'انضم إلينا']);
+
+        $section = \App\Models\FormSection::create([
+            'form_id' => 'join-us', 'title_en' => 'S', 'title_ar' => 'س',
+            'is_repeatable' => false, 'order_index' => 0,
+        ]);
+        $field = \App\Models\FormField::create([
+            'section_id'        => $section->id,
+            'code'              => 'sectors_of_operation',
+            'label_en'          => 'Sectors of Operation',
+            'label_ar'          => 'قطاعات العمل',
+            'field_type'        => 'checkbox_group',
+            'is_required'       => true,
+            'is_active'         => true,
+            'is_system_managed' => true,
+            'order_index'       => 0,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson(route('admin.forms.fields.destroy', [$formDef, $field]))
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('form_fields', ['id' => $field->id]);
+    }
 }
