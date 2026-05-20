@@ -123,6 +123,9 @@
     </div>
 </section>
 
+{{-- 4b. Board Members --}}
+@include('pages.partials.board-members')
+
 {{-- 5. Latest News --}}
 <section class="bg-ssbc-beige">
     <div class="ssbc-container py-20">

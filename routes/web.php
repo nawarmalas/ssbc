@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Auth\LoginController;
+use App\Http\Controllers\Admin\BoardMemberController as AdminBoardMemberController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormBuilderController;
@@ -92,6 +93,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::middleware('admin.role:admin')->group(function () {
             Route::resource('users', AdminUserController::class)->except(['show']);
+
+            Route::resource('board-members', AdminBoardMemberController::class)->except(['show']);
 
             Route::get('/contact', [AdminContactController::class, 'index'])->name('contact.index');
             Route::get('/contact/{contactSubmission}', [AdminContactController::class, 'show'])->name('contact.show');
