@@ -1,12 +1,12 @@
 # SYSABC.ORG — 5-Fix Design Spec
 **Date:** 2026-05-20  
-**Reviewed by:** Claude Sonnet 4.6 + Claude Opus (architecture review)
+**Reviewed by:** Claude Sonnet 4.6 + Claude Opus (two architecture reviews)
 
 ---
 
 ## Canonical tree
 
-All edits target the top-level `app/` and `resources/` tree. The `ssbc_app/` subtree is a stale copy — do not touch it.
+All edits target the top-level `app/` and `resources/` tree. The `ssbc_app/` subtree is a stale copy — add it to `.gitignore` and do not touch it.
 
 ---
 
@@ -24,11 +24,31 @@ Five new columns across two tables, all added in dedicated migrations:
 
 All five added to the respective model's `$fillable` and `casts()`.
 
+**`unique(section_id, code)` on a nullable column:** MySQL/MariaDB/Postgres all allow multiple NULLs in a composite unique index — no partial index needed. Fields without a code simply have `code = null`.
+
+---
+
+## Migrations: two files, strict ordering
+
+**Migration 1 — schema only:** Add all five columns above. Must run first.
+
+**Migration 2 — data only:** Must run after Migration 1. Performs in order:
+1. Slug backfill for existing `sectors` rows: `Str::slug($name_en ?: $name_ar)`, append `-2`/`-3` on collision.
+2. Set `code = 'sectors_of_operation'`, `is_system_managed = true`, rebuild `options` on the Sectors of Operation field.
+3. Set `code = 'current_operations_country'` on the existing country radio field.
+4. Insert Fix-4 `country_other_specify` text field.
+5. Increment `order_index DESC` for `join-us` sections with `order_index >= 2`, then insert Section 3 and its four fields (Fix-5).
+6. Call `FormService::invalidateCache('join-us')` — outside any transaction (Laravel/MySQL migrations don't auto-transact DDL anyway).
+
+**`down()` for Migration 2:** Delete Section 3 by title, decrement order_index for remaining sections ≥ 2, remove Fix-4 field by code, clear codes on affected fields. Migration 1 `down()` is standard `dropColumn`.
+
 ---
 
 ## Fix 1 — Strategic Pillars: switch to dynamic sectors
 
 **File:** `resources/views/pages/home.blade.php` (section 4, lines 115–122)
+
+**Scope:** Only the `pillars.items` loop at line 116 changes. The `mvv.values` loop at line 94 (`$site->homeList($locale, 'mvv.values', ...)`) is untouched.
 
 Replace:
 ```blade
@@ -119,9 +139,10 @@ use Illuminate\Support\Facades\DB;
 
 class SectorObserver
 {
-    public function saved(Sector $sector): void    { $this->sync(); }
-    public function deleted(Sector $sector): void  { $this->sync(); }
-    public function restored(Sector $sector): void { $this->sync(); }
+    public function saved(Sector $sector): void         { $this->sync(); }
+    public function deleted(Sector $sector): void       { $this->sync(); }
+    public function restored(Sector $sector): void      { $this->sync(); }
+    public function forceDeleted(Sector $sector): void  { $this->sync(); }
 
     private function sync(): void
     {
@@ -154,11 +175,9 @@ Register in `app/Providers/AppServiceProvider.php::boot()`:
 
 `saveQuietly()` prevents recursive model events. `DB::afterCommit` is a no-op outside a transaction (runs immediately), safe for both controllers and seeders.
 
-### 3c. One-time migration: seed sectors field with code and sync options
+### 3c. Data migration (Migration 2, step 2)
 
-A dedicated migration:
-1. Sets `code = 'sectors_of_operation'` and `is_system_managed = true` on the "Sectors of Operation" form field
-2. Rebuilds its `options` JSON from `Sector::active()->orderBy('sort_order')->get()` using `$s->slug` as value
+Sets `code = 'sectors_of_operation'` and `is_system_managed = true` on the "Sectors of Operation" form field, then rebuilds its `options` JSON from `Sector::whereNull('deleted_at')->where('is_active', true)->orderBy('sort_order')->get()` using `$s->slug` as value. This runs after slug backfill (step 1) so all slugs already exist.
 
 ### 3d. formatAnswer() fallback for deleted sectors
 
@@ -176,13 +195,16 @@ return $value;
 
 ### 3e. FormBuilderController guard
 
-In `validateField()`, after validation, strip protected columns for system-managed fields:
+In `validateField()`, after validation, strip protected columns for system-managed fields. Use an **allow-list** (not just block-list):
 ```php
-$existing = isset($field) ? $field : null; // passed as parameter
 if ($existing && $existing->is_system_managed) {
-    unset($data['options'], $data['field_type']);
+    // Only these keys are editable on system-managed fields:
+    $allowed = ['label_en', 'label_ar', 'placeholder_en', 'placeholder_ar',
+                'is_required', 'is_active', 'order_index', 'section_id'];
+    $data = array_intersect_key($data, array_flip($allowed));
 }
 ```
+This blocks `field_type`, `options`, `code`, `is_system_managed`, `conditional_logic`, and any future columns from being overwritten.
 
 In `destroyField()`, block deletion:
 ```php
@@ -191,7 +213,11 @@ if ($field->is_system_managed) {
 }
 ```
 
-The form-builder admin Blade view should visually indicate `is_system_managed` fields (badge + disabled options editor + disabled field-type selector + no delete button). Labels, placeholders, order, and `is_active` remain editable.
+**Admin Blade UI (`resources/views/admin/form-builder/index.blade.php`):** A backend guard is necessary but not sufficient — the controller silently no-ops on blocked fields, causing confusing UX. Changes:
+- When `field.is_system_managed === true`: hide Delete button, replace Edit with a "Managed via Sectors admin →" link, show a lock badge.
+- In the field edit modal: disable `field_type` selector and `options` editor; show a note explaining managed status.
+- `is_system_managed` is already in `field` JSON (serialized via `$sections->toJson()` in the controller's `index()`).
+- Labels, placeholders, `is_required`, `is_active`, order remain editable.
 
 ---
 
@@ -209,7 +235,9 @@ The `conditional_logic` JSON column on `form_fields` uses this structure:
 }
 ```
 
-Supported `op` values: `equals`, `not_equals`, `in`, `not_in`, `contains` (for checkbox_group JSON arrays).
+Supported `op` values: `equals`, `not_equals`, `in`, `not_in`, `contains`. `field_code` always references the target field's `code` column — never its DB `id` (IDs differ across environments).
+
+**`contains` semantics:** After the Alpine fix in §4g, checkbox_group answers arrive as PHP arrays. Server-side `contains` checks `in_array($c['value'], $val, true)` where `$val` is that array. Client-side `contains` checks `checkboxAnswers[resolvedId + '_' + ri].includes(c.value)`.
 
 ### 4b. New form field in DB (migration)
 
@@ -309,21 +337,35 @@ The Alpine.js frontend currently submits `checkbox_group` values as a JSON strin
        ...>
 ```
 
-**Conditional visibility:** After each field's template block, add an `x-show` wrapper controlled by `fieldIsVisible(field, ri-1)`. Add `fieldIsVisible(field, ri)` to the Alpine.js `dynamicForm()` component data:
+**Conditional visibility:** Since `code` is already a column on `form_fields`, it is serialized into `$form->toJson()` automatically (after adding it to `$fillable`). In Alpine's `init()`, build a reverse lookup once:
+
+```js
+init() {
+    // Build code→id map from the form JSON
+    this.codeToId = {};
+    this.sections.forEach(s => s.fields.forEach(f => {
+        if (f.code) this.codeToId[f.code] = f.id;
+    }));
+    // ... rest of existing init
+},
+```
+
+No `fieldCodeMap` prop needed. Then add `fieldIsVisible(field, ri)` to the `dynamicForm()` component:
 
 ```js
 fieldIsVisible(field, ri) {
     const logic = field.conditional_logic;
     if (!logic) return true;
     const results = logic.conditions.map(c => {
-        const val = this.answers[c.field_code_id + '_' + ri]
-                    ?? this.answers[c.field_code_id + '_0'];
+        const id = this.codeToId[c.field_code];
+        if (!id) return true;
         switch (c.op) {
-            case 'equals':     return val === c.value;
-            case 'not_equals': return val !== c.value;
-            case 'contains':   return Array.isArray(this.checkboxAnswers[c.field_code_id + '_' + ri])
-                                    ? this.checkboxAnswers[c.field_code_id + '_' + ri].includes(c.value)
-                                    : false;
+            case 'equals':     return this.answers[id + '_' + ri] === c.value;
+            case 'not_equals': return this.answers[id + '_' + ri] !== c.value;
+            case 'contains': {
+                const arr = this.checkboxAnswers[id + '_' + ri] ?? [];
+                return arr.includes(c.value);
+            }
             default:           return true;
         }
     });
@@ -331,7 +373,7 @@ fieldIsVisible(field, ri) {
 },
 ```
 
-Note: the Alpine data needs `field_code_id` to be the resolved field ID (passed from PHP using the form's field list). A clean way: pass a `fieldCodeMap` object (`{code: id}`) alongside the form JSON.
+When `fieldIsVisible` returns false, the field input must also clear its value (x-effect or @change on the condition parent) so stale data is not submitted.
 
 **Conditional field required:** When `fieldIsVisible` returns true and the field `is_required`, the `:required` attribute on the input must evaluate true. When it returns false, the input is hidden and not submitted.
 
@@ -341,7 +383,9 @@ Note: the Alpine data needs `field_code_id` to be the resolved field ID (passed 
 
 ## Fix 5 — New Section 3: Interests and Cooperation
 
-### Migration steps (single migration file, wrapped in DB::transaction):
+### Migration steps (Migration 2, steps 5–6 — see §Migrations above):
+
+Performed inside Migration 2 after the sector/field code work:
 
 1. Increment `order_index` for all `join-us` sections with `order_index >= 2`, using descending order to avoid unique collisions:
    ```php
@@ -450,7 +494,7 @@ The `FormSeeder` has an early-return guard (`if (FormSection::where('form_id', '
 | MODIFY | `resources/views/pages/home.blade.php` — Fix 1 + Fix 2 |
 | MODIFY | `resources/views/join/create.blade.php` — conditional_logic, checkbox array inputs, step validation |
 | CREATE | `app/Observers/SectorObserver.php` |
-| CREATE | `database/migrations/…_add_code_conditional_logic_is_system_managed_to_form_fields.php` |
-| CREATE | `database/migrations/…_add_slug_soft_delete_to_sectors.php` |
-| CREATE | `database/migrations/…_update_form_fields_seed_section3.php` |
-| REVIEW | `resources/views/admin/form-builder/` — mark system-managed fields in UI |
+| CREATE | `database/migrations/…_add_form_field_and_sector_columns.php` (Migration 1 — schema) |
+| CREATE | `database/migrations/…_seed_codes_sections_and_fields.php` (Migration 2 — data) |
+| MODIFY | `resources/views/admin/form-builder/index.blade.php` — system-managed UI |
+| MODIFY | `.gitignore` — add `ssbc_app/` |
