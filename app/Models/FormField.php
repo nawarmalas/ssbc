@@ -8,21 +8,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FormField extends Model
 {
     protected $fillable = [
-        'section_id', 'label_en', 'label_ar',
+        'section_id', 'code',
+        'label_en', 'label_ar',
         'placeholder_en', 'placeholder_ar',
-        'field_type', 'is_required', 'is_active', 'order_index',
-        'options', 'validation_rules', 'file_config',
+        'field_type', 'is_required', 'is_active', 'is_system_managed',
+        'order_index',
+        'options', 'validation_rules', 'conditional_logic', 'file_config',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_required' => 'boolean',
-            'is_active' => 'boolean',
-            'order_index' => 'integer',
-            'options' => 'array',
-            'validation_rules' => 'array',
-            'file_config' => 'array',
+            'is_required'       => 'boolean',
+            'is_active'         => 'boolean',
+            'is_system_managed' => 'boolean',
+            'order_index'       => 'integer',
+            'options'           => 'array',
+            'validation_rules'  => 'array',
+            'conditional_logic' => 'array',
+            'file_config'       => 'array',
         ];
     }
 
@@ -48,12 +52,13 @@ class FormField extends Model
      * - checkbox_group: decode JSON, map values to option labels, join with ", "
      * - select/radio: map single value to option label
      * - declaration: "Accepted" / "—"
+     * - sectors_of_operation: fallback to Sector model (incl. trashed) when label not found
      * - other types: trimmed string, or em-dash when empty
      */
     public function formatAnswer(?string $raw, string $locale = 'en'): string
     {
         if ($raw === null || $raw === '') {
-            return $this->field_type === 'declaration' ? '—' : '—';
+            return '—';
         }
 
         $optionLabel = function (string $value) use ($locale): string {
@@ -64,6 +69,17 @@ class FormField extends Model
                         : ($opt['label_en'] ?? $opt['label_ar'] ?? $value);
                 }
             }
+
+            // Fallback: resolve deleted sectors by slug
+            if ($this->code === 'sectors_of_operation') {
+                $sector = \App\Models\Sector::withTrashed()->where('slug', $value)->first();
+                if ($sector) {
+                    return $locale === 'ar'
+                        ? ($sector->name_ar ?: $sector->name_en)
+                        : ($sector->name_en ?: $sector->name_ar);
+                }
+            }
+
             return $value;
         };
 
