@@ -113,18 +113,15 @@
         </p>
 
         <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-            @foreach($site->homeList($locale, 'pillars.items', (array) __('home.pillars.items')) as $item)
+            @foreach($sectors as $sector)
                 <div class="ssbc-pillar-card">
-                    <h3 class="text-lg font-display font-semibold text-ssbc-green mb-2">{{ $item['title'] ?? '' }}</h3>
-                    <p class="text-sm text-ssbc-dark/75 leading-relaxed">{{ $item['desc'] ?? '' }}</p>
+                    <h3 class="text-lg font-display font-semibold text-ssbc-green mb-2">{{ $sector->name() }}</h3>
+                    <p class="text-sm text-ssbc-dark/75 leading-relaxed">{{ $sector->description() }}</p>
                 </div>
             @endforeach
         </div>
     </div>
 </section>
-
-{{-- 4b. Sectors --}}
-@include('pages.partials.sectors')
 
 {{-- 4c. Board Members --}}
 @include('pages.partials.board-members')
