@@ -92,6 +92,26 @@ class BoardMemberControllerTest extends TestCase
         Storage::disk('public')->assertExists($member->photo);
     }
 
+    public function test_store_sets_is_active_false_when_checkbox_absent(): void
+    {
+        $data = [
+            'name_ar'    => 'أحمد',
+            'name_en'    => 'Ahmad',
+            'role_ar'    => 'رئيس',
+            'role_en'    => 'Chair',
+            'bio_ar'     => 'نبذة',
+            'bio_en'     => 'Bio',
+            'sort_order' => 0,
+            // 'is_active' intentionally absent
+        ];
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.board-members.store'), $data)
+            ->assertRedirect(route('admin.board-members.index'));
+
+        $this->assertDatabaseHas('board_members', ['name_en' => 'Ahmad', 'is_active' => false]);
+    }
+
     public function test_edit_shows_form_with_member_data(): void
     {
         $member = BoardMember::factory()->create();

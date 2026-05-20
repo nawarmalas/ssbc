@@ -26,6 +26,7 @@ class BoardMemberController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateMember($request);
+        $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('photo')) {
             $data['photo'] = $request->file('photo')->store('board-members', 'public');
