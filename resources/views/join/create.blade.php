@@ -129,7 +129,7 @@
                                 <div x-show="!section.is_repeatable || activeRepeat === ri - 1"
                                      class="space-y-6">
                                     <template x-for="field in section.fields" :key="field.id">
-                                        <div>
+                                        <div x-show="fieldIsVisible(field, ri-1)">
                                             {{-- Label --}}
                                             <label class="ssbc-label" :for="'f_' + field.id + '_' + (ri-1)">
                                                 <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
@@ -247,6 +247,7 @@
                                                         <template x-for="opt in (field.options || [])" :key="opt.value">
                                                             <label class="flex items-start gap-2 cursor-pointer text-sm p-2 hover:bg-ssbc-beige/40 rounded transition-colors">
                                                                 <input type="checkbox"
+                                                                       :name="'answers[' + field.id + '][' + (ri-1) + '][]'"
                                                                        :value="opt.value"
                                                                        :checked="(checkboxAnswers[field.id + '_' + (ri-1)] || []).includes(opt.value)"
                                                                        @change="toggleCheckbox(field.id, ri-1, opt.value)"
@@ -255,10 +256,6 @@
                                                             </label>
                                                         </template>
                                                     </div>
-                                                    {{-- Hidden serialized value --}}
-                                                    <input type="hidden"
-                                                           :name="'answers[' + field.id + '][' + (ri-1) + ']'"
-                                                           :value="JSON.stringify(checkboxAnswers[field.id + '_' + (ri-1)] || [])">
                                                 </div>
                                             </template>
 
@@ -374,6 +371,7 @@ function dynamicForm(sectionsJson) {
         submitting: false,
         submitError: null,
         firstErrorStep: null,
+        codeToId: {},
         months: [
             { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
             { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
@@ -385,7 +383,31 @@ function dynamicForm(sectionsJson) {
             sections.forEach(s => {
                 if (s.is_repeatable) this.repeats[s.id] = 1;
                 this.initDatePartsForSection(s, 1);
+                (s.fields || []).forEach(f => {
+                    if (f.code) this.codeToId[f.code] = f.id;
+                });
             });
+        },
+
+        fieldIsVisible(field, ri) {
+            const logic = field.conditional_logic;
+            if (!logic || !logic.conditions) return true;
+            const results = logic.conditions.map(c => {
+                const id = this.codeToId[c.field_code];
+                if (id === undefined) return true;
+                switch (c.op) {
+                    case 'equals':     return this.answers[id + '_' + ri] === c.value;
+                    case 'not_equals': return this.answers[id + '_' + ri] !== c.value;
+                    case 'contains': {
+                        const arr = this.checkboxAnswers[id + '_' + ri] ?? [];
+                        return arr.includes(c.value);
+                    }
+                    default: return true;
+                }
+            });
+            return logic.operator === 'OR'
+                ? results.some(Boolean)
+                : results.every(Boolean);
         },
 
         get currentSection() {
@@ -560,6 +582,7 @@ function dynamicForm(sectionsJson) {
             for (const field of s.fields) {
                 for (let r = 0; r < count; r++) {
                     if (r > 0 && !s.is_repeatable) break;
+                    if (!this.fieldIsVisible(field, r)) continue;
                     const key = field.id + '_' + r;
                     const requiredHere = field.is_required && r === 0;
 
