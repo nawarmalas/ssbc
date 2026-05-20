@@ -90,18 +90,17 @@ return new class extends Migration
             }
         }
 
-        // ── Step 5: Shift existing sections with order_index >= 2 ─────────────
-        FormSection::where('form_id', 'join-us')
-            ->where('order_index', '>=', 2)
-            ->orderBy('order_index', 'desc')
-            ->each(fn($s) => $s->increment('order_index'));
-
-        // ── Step 6: Insert Section 3 + 4 fields ───────────────────────────────
+        // ── Step 5 + 6: Shift sections and insert Section 3 (idempotent guard) ──
         $alreadyExists = FormSection::where('form_id', 'join-us')
             ->where('title_en', 'Section 3: Interests and Cooperation')
             ->exists();
 
         if (! $alreadyExists) {
+            // Shift existing sections with order_index >= 2 before inserting at 2
+            FormSection::where('form_id', 'join-us')
+                ->where('order_index', '>=', 2)
+                ->orderBy('order_index', 'desc')
+                ->each(fn($s) => $s->increment('order_index'));
             $section3 = FormSection::create([
                 'form_id'       => 'join-us',
                 'title_en'      => 'Section 3: Interests and Cooperation',
