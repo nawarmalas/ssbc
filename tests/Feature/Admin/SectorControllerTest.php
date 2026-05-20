@@ -133,7 +133,7 @@ class SectorControllerTest extends TestCase
             ->delete(route('admin.sectors.destroy', $sector))
             ->assertRedirect(route('admin.sectors.index'));
 
-        $this->assertDatabaseMissing('sectors', ['id' => $sector->id]);
+        $this->assertSoftDeleted('sectors', ['id' => $sector->id]);
     }
 
     public function test_non_admin_cannot_access_sectors(): void
