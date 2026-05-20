@@ -5,12 +5,12 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
             <div class="md:col-span-2">
                 <a href="{{ route('home', ['locale' => $locale]) }}"
-                   class="inline-block mb-1"
+                   class="flex justify-center mb-4"
                    aria-label="{{ __('common.site_name') }}">
                     <img
                         src="{{ asset('images/logos/logo-one-tone.png') }}"
                         alt="{{ __('common.site_name') }}"
-                        class="h-16 md:h-20 w-auto"
+                        class="h-24 md:h-32 w-auto"
                         loading="lazy">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>

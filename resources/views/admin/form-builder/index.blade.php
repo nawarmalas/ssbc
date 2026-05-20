@@ -9,12 +9,22 @@
 <div class="flex items-center justify-between mb-8">
     <h1 class="text-2xl font-display font-bold text-ssbc-green">Form Builder — Join Us</h1>
     <div class="flex gap-3">
+        <a href="{{ route('admin.forms.index') }}"
+           class="ssbc-btn-outline-dark text-sm">← Back to Forms</a>
         <a href="{{ route('admin.forms.preview', $formDefinition) }}" target="_blank"
            class="ssbc-btn-outline-dark text-sm">Preview Form ↗</a>
     </div>
 </div>
 
 <div x-data="formBuilder()" x-init="init()">
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-ssbc-sage">
+            Drag sections or fields to rearrange them. Order changes save automatically.
+        </p>
+        <p x-show="builderStatus" x-cloak
+           class="text-xs font-semibold text-ssbc-green"
+           x-text="builderStatus"></p>
+    </div>
 
     {{-- Add Section --}}
     <div class="mb-4 flex justify-end">
@@ -65,15 +75,15 @@
                                           class="ml-1 text-xs text-red-500">required</span>
                                     <span x-show="!field.is_active"
                                           class="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">inactive</span>
-                                    <span x-show="field.is_system_managed"
+                                    <span x-show="fieldIsSystemManaged(field)"
                                           class="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-300">🔒 system</span>
                                 </div>
                                 <button type="button" @click="openFieldModal(field, section.id)"
                                         class="text-xs text-ssbc-sage hover:text-ssbc-green px-2">Edit</button>
-                                <a x-show="field.is_system_managed"
+                                <a x-show="fieldIsSystemManaged(field)"
                                    href="{{ route('admin.sectors.index') }}"
                                    class="text-xs text-ssbc-gold hover:underline px-2">Manage Sectors ↗</a>
-                                <button x-show="!field.is_system_managed"
+                                <button x-show="!fieldIsSystemManaged(field)"
                                         type="button" @click="confirmDeleteField(field, section)"
                                         class="text-xs text-red-500 hover:text-red-700 px-2">Delete</button>
                             </div>
@@ -158,12 +168,26 @@
                 </div>
                 <div>
                     <label class="ssbc-label">Field Type *</label>
-                    <select x-model="fieldForm.field_type" class="ssbc-input"
-                            :disabled="editingField?.is_system_managed">
-                        @foreach($fieldTypes as $type)
-                            <option value="{{ $type }}">{{ $type }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative" @click.outside="fieldTypeMenuOpen = false">
+                        <button type="button"
+                                @click="fieldTypeMenuOpen = !fieldTypeMenuOpen"
+                                :disabled="fieldIsSystemManaged(editingField)"
+                                class="ssbc-input flex items-center justify-between text-left disabled:cursor-not-allowed disabled:opacity-60">
+                            <span x-text="fieldTypeLabel(fieldForm.field_type)"></span>
+                            <span class="text-ssbc-sage">▾</span>
+                        </button>
+                        <div x-show="fieldTypeMenuOpen" x-cloak
+                             class="absolute left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto border border-gray-300 bg-white shadow-lg">
+                            <template x-for="type in fieldTypes" :key="type">
+                                <button type="button"
+                                        @click="setFieldType(type); fieldTypeMenuOpen = false"
+                                        class="block w-full px-3 py-2 text-left text-sm hover:bg-ssbc-beige/60"
+                                        :class="fieldForm.field_type === type ? 'bg-ssbc-gold/20 font-semibold text-ssbc-green' : 'text-ssbc-dark'">
+                                    <span x-text="fieldTypeLabel(type)"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex gap-4 items-end pb-1">
                     <label class="flex items-center gap-2 cursor-pointer text-sm">
@@ -178,7 +202,7 @@
             </div>
 
             {{-- Options builder (select / radio / checkbox_group) --}}
-            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !editingField?.is_system_managed" class="mt-6">
+            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !fieldIsSystemManaged(editingField)" class="mt-6">
                 <div class="flex items-center justify-between mb-3">
                     <label class="ssbc-label mb-0">Options</label>
                     <button type="button" @click="addOption()" class="text-xs text-ssbc-gold hover:underline">+ Add Option</button>
@@ -206,7 +230,7 @@
             </div>
 
             {{-- System-managed notice --}}
-            <div x-show="editingField?.is_system_managed" class="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div x-show="fieldIsSystemManaged(editingField)" class="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Options for this field are managed automatically via <a href="{{ route('admin.sectors.index') }}" class="underline font-medium">Sectors admin</a>. Labels, placeholders, and required status can still be edited here.
             </div>
 
@@ -267,6 +291,10 @@ function formBuilder() {
         saving: false,
         sectionError: null,
         fieldError: null,
+        builderStatus: null,
+        builderStatusTimer: null,
+        fieldTypeMenuOpen: false,
+        fieldTypes: @json($fieldTypes),
 
         sectionModalOpen: false,
         editingSection: null,
@@ -309,6 +337,8 @@ function formBuilder() {
         initSortable() {
             const list = this.$refs.sectionsList;
             if (!list) return;
+            if (list._ssbcSortable) return;
+            list._ssbcSortable = true;
             new Sortable(list, {
                 animation: 150,
                 handle: '.drag-handle',
@@ -320,6 +350,8 @@ function formBuilder() {
         initFieldSortable(sectionId) {
             const el = document.getElementById('fields-' + sectionId);
             if (!el) return;
+            if (el._ssbcSortable) return;
+            el._ssbcSortable = true;
             new Sortable(el, {
                 animation: 150,
                 handle: '.field-drag-handle',
@@ -386,21 +418,24 @@ function formBuilder() {
         },
 
         async reorderSections() {
-            const items = Array.from(this.$refs.sectionsList.children).map((el, i) => ({
-                id: parseInt(el.dataset.id),
+            const items = this.sortableItems(this.$refs.sectionsList).map((el, i) => ({
+                id: Number(el.dataset.id),
                 order_index: i,
             }));
-            await fetch(this.endpoints.reorderSections, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
-                body: JSON.stringify({ items }),
-            });
+            if (!items.length) return;
+            try {
+                await this.requestJson(this.endpoints.reorderSections, 'POST', { items });
+                this.setBuilderStatus('Section order saved.');
+            } catch (error) {
+                this.setBuilderStatus(error.message || 'Unable to save section order.');
+            }
         },
 
         openFieldModal(field, sectionId) {
             this.editingField = field;
             this.editingFieldSectionId = sectionId;
             this.fieldError = null;
+            this.fieldTypeMenuOpen = false;
             this.fieldForm = field ? {
                 section_id: field.section_id,
                 label_en: field.label_en, label_ar: field.label_ar,
@@ -425,6 +460,29 @@ function formBuilder() {
 
         addOption() {
             this.fieldForm.options.push({ label_en: '', label_ar: '', value: '' });
+        },
+
+        setFieldType(type) {
+            if (this.fieldIsSystemManaged(this.editingField)) return;
+
+            this.fieldForm.field_type = type;
+
+            if (['select','radio','checkbox_group'].includes(type) && !this.fieldForm.options.length) {
+                this.fieldForm.options = [
+                    { label_en: '', label_ar: '', value: '' },
+                    { label_en: '', label_ar: '', value: '' },
+                ];
+            }
+        },
+
+        fieldTypeLabel(type) {
+            return String(type || '').replaceAll('_', ' ');
+        },
+
+        fieldIsSystemManaged(field) {
+            return field?.is_system_managed === true
+                || field?.is_system_managed === 1
+                || field?.is_system_managed === '1';
         },
 
         toggleFileType(type) {
@@ -552,15 +610,30 @@ function formBuilder() {
         async reorderFields(sectionId) {
             const el = document.getElementById('fields-' + sectionId);
             if (!el) return;
-            const items = Array.from(el.children).map((div, i) => ({
-                id: parseInt(div.dataset.id),
+            const items = this.sortableItems(el).map((div, i) => ({
+                id: Number(div.dataset.id),
                 order_index: i,
             }));
-            await fetch(this.endpoints.reorderFields, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
-                body: JSON.stringify({ items }),
-            });
+            if (!items.length) return;
+            try {
+                await this.requestJson(this.endpoints.reorderFields, 'POST', { items });
+                this.setBuilderStatus('Field order saved.');
+            } catch (error) {
+                this.setBuilderStatus(error.message || 'Unable to save field order.');
+            }
+        },
+
+        setBuilderStatus(message) {
+            this.builderStatus = message;
+            clearTimeout(this.builderStatusTimer);
+            this.builderStatusTimer = setTimeout(() => {
+                this.builderStatus = null;
+            }, 3000);
+        },
+
+        sortableItems(container) {
+            return Array.from(container?.children || [])
+                .filter(el => el.dataset?.id && Number.isInteger(Number(el.dataset.id)));
         },
     };
 }

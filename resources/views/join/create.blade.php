@@ -120,6 +120,12 @@
                                                 class="px-4 py-1.5 rounded-full text-sm border border-dashed border-ssbc-gold text-ssbc-gold">
                                             + Add another
                                         </button>
+                                        <button type="button"
+                                                x-show="(repeats[section.id] || 1) > 1"
+                                                @click="removeLastRepeat(section)"
+                                                class="px-4 py-1.5 rounded-full text-sm border border-red-200 text-red-600 hover:bg-red-50">
+                                            Remove latest
+                                        </button>
                                     </div>
                                 </div>
                             </template>
@@ -474,6 +480,26 @@ function dynamicForm(sectionsJson) {
                 this.activeRepeat = current;
                 this.initDatePartsForSection(section, current + 1);
             }
+        },
+
+        removeLastRepeat(section) {
+            if (!section?.is_repeatable) return;
+            const current = this.repeats[section.id] || 1;
+            if (current <= 1) return;
+
+            const lastIndex = current - 1;
+            for (const field of section.fields || []) {
+                const key = field.id + '_' + lastIndex;
+                delete this.answers[key];
+                delete this.checkboxAnswers[key];
+                delete this.fileNames[key];
+                delete this.fileErrors[key];
+                delete this.stepErrors[key];
+                delete this.dateParts[key];
+            }
+
+            this.repeats[section.id] = current - 1;
+            this.activeRepeat = Math.min(this.activeRepeat, current - 2);
         },
 
         toggleCheckbox(fieldId, repeatIndex, value) {

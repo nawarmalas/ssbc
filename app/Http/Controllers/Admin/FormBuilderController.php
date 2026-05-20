@@ -134,7 +134,7 @@ class FormBuilderController extends Controller
         $field = FormField::create($data);
         FormService::invalidateCache($formDefinition->form_id);
 
-        return response()->json(['success' => true, 'data' => $field]);
+        return response()->json(['success' => true, 'data' => $field->fresh()]);
     }
 
     public function updateField(Request $request, FormDefinition $formDefinition, FormField $field): JsonResponse
