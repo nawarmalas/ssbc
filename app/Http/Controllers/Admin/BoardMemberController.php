@@ -45,6 +45,7 @@ class BoardMemberController extends Controller
     public function update(Request $request, BoardMember $boardMember)
     {
         $data = $this->validateMember($request);
+        $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('photo')) {
             if ($boardMember->photo) {
@@ -80,7 +81,7 @@ class BoardMemberController extends Controller
             'role_en'    => ['required', 'string', 'max:255'],
             'bio_ar'     => ['required', 'string', 'max:1000'],
             'bio_en'     => ['required', 'string', 'max:1000'],
-            'photo'      => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
+            'photo'      => ['nullable', 'image', 'max:2048'],
             'sort_order' => ['required', 'integer', 'min:0'],
             'is_active'  => ['boolean'],
         ]);

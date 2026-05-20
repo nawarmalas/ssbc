@@ -64,7 +64,7 @@ class BoardMemberControllerTest extends TestCase
             ->post(route('admin.board-members.store'), $data)
             ->assertRedirect(route('admin.board-members.index'));
 
-        $this->assertDatabaseHas('board_members', ['name_en' => 'Ahmad Al-Rashid']);
+        $this->assertDatabaseHas('board_members', ['name_en' => 'Ahmad Al-Rashid', 'photo' => null]);
     }
 
     public function test_store_uploads_photo(): void
@@ -144,7 +144,32 @@ class BoardMemberControllerTest extends TestCase
             ])
             ->assertRedirect(route('admin.board-members.index'));
 
+        $updated = $member->fresh();
+        $this->assertNotNull($updated->photo);
+        $this->assertNotSame($oldPath, $updated->photo);
+        Storage::disk('public')->assertExists($updated->photo);
+
         Storage::disk('public')->assertMissing($oldPath);
+    }
+
+    public function test_update_sets_is_active_false_when_checkbox_absent(): void
+    {
+        $member = BoardMember::factory()->create(['is_active' => true]);
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.board-members.update', $member), [
+                'name_ar'    => $member->name_ar,
+                'name_en'    => $member->name_en,
+                'role_ar'    => $member->role_ar,
+                'role_en'    => $member->role_en,
+                'bio_ar'     => $member->bio_ar,
+                'bio_en'     => $member->bio_en,
+                'sort_order' => $member->sort_order,
+                // 'is_active' intentionally absent — simulates unchecked checkbox
+            ])
+            ->assertRedirect(route('admin.board-members.index'));
+
+        $this->assertDatabaseHas('board_members', ['id' => $member->id, 'is_active' => false]);
     }
 
     public function test_destroy_deletes_member_and_photo(): void
