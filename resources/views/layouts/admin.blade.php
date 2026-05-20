@@ -39,7 +39,7 @@
         $nav[] = ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'),  'badge' => $unread['submissions']];
         $nav[] = ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),      'badge' => $unread['contact']];
         $nav[] = ['key' => 'users',       'route' => 'admin.users.index',       'label' => 'Admin Users',            'badge' => null];
-        $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'أعضاء المجلس', 'badge' => null];
+        $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'Board Members', 'badge' => null];
     }
     if ($authUser?->canCustomizeSite()) {
         $nav[] = ['key' => 'settings', 'route' => 'admin.settings.edit', 'label' => __('admin.site_customization'), 'badge' => null];

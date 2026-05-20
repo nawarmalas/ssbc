@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Board Members — ' . __('admin.title'))
-@section('page_title', 'أعضاء المجلس / Board Members')
+@section('title', 'Board Members - ' . __('admin.title'))
+@section('page_title', 'Board Members')
 
 @section('content')
     <div class="flex items-center justify-end mb-6">

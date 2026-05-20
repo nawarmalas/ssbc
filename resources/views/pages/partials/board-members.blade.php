@@ -12,7 +12,7 @@
 
         <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
             @foreach($boardMembers as $member)
-                <div class="bg-white rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                <div class="group bg-white rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                      x-data="{ open: false }"
                      @mouseenter="open = true"
                      @mouseleave="open = false"
@@ -32,10 +32,10 @@
                             </div>
                         @endif
 
-                        {{-- Bio overlay — slides up on hover (desktop) or tap (mobile) --}}
-                        <div class="absolute left-0 right-0 text-white p-4 transition-all duration-300"
+                        {{-- Bio overlay - CSS hover fallback plus Alpine tap toggle. --}}
+                        <div class="absolute bottom-0 left-0 right-0 translate-y-full text-white p-4 transition-transform duration-300 group-hover:translate-y-0"
                              style="background:rgba(21,62,53,0.93);"
-                             :class="open ? 'bottom-0' : '-bottom-full'">
+                             :class="open ? 'translate-y-0' : 'translate-y-full'">
                             <p class="text-xs font-bold uppercase tracking-wide mb-2" style="color:#daa900;">
                                 {{ $locale === 'ar' ? 'نبذة مختصرة' : 'About' }}
                             </p>
