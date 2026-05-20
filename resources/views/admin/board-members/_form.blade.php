@@ -15,7 +15,9 @@
 
 <form method="POST" action="{{ $action }}" enctype="multipart/form-data" class="ssbc-admin-card p-6 space-y-6">
     @csrf
-    @if($isEdit) @method('PUT') @endif
+    @if($isEdit)
+        @method('PUT')
+    @endif
 
     {{-- Bilingual name --}}
     <div class="grid md:grid-cols-2 md:divide-x divide-gray-200">
@@ -76,7 +78,7 @@
         </div>
         <div class="flex items-center gap-3 pt-6">
             <input id="is_active" name="is_active" type="checkbox" value="1" class="h-4 w-4 accent-ssbc-green"
-                   {{ old('is_active', $member->is_active ?? true) ? 'checked' : '' }}>
+                   @checked(old('is_active', $member->is_active ?? true))>
             <label for="is_active" class="ssbc-admin-label mb-0 cursor-pointer">Visible on home page</label>
         </div>
     </div>
