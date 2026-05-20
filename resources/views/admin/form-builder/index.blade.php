@@ -65,10 +65,16 @@
                                           class="ml-1 text-xs text-red-500">required</span>
                                     <span x-show="!field.is_active"
                                           class="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">inactive</span>
+                                    <span x-show="field.is_system_managed"
+                                          class="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-300">🔒 system</span>
                                 </div>
                                 <button type="button" @click="openFieldModal(field, section.id)"
                                         class="text-xs text-ssbc-sage hover:text-ssbc-green px-2">Edit</button>
-                                <button type="button" @click="confirmDeleteField(field, section)"
+                                <a x-show="field.is_system_managed"
+                                   href="{{ route('admin.sectors.index') }}"
+                                   class="text-xs text-ssbc-gold hover:underline px-2">Manage Sectors ↗</a>
+                                <button x-show="!field.is_system_managed"
+                                        type="button" @click="confirmDeleteField(field, section)"
                                         class="text-xs text-red-500 hover:text-red-700 px-2">Delete</button>
                             </div>
                         </template>
@@ -152,7 +158,8 @@
                 </div>
                 <div>
                     <label class="ssbc-label">Field Type *</label>
-                    <select x-model="fieldForm.field_type" class="ssbc-input">
+                    <select x-model="fieldForm.field_type" class="ssbc-input"
+                            :disabled="editingField?.is_system_managed">
                         @foreach($fieldTypes as $type)
                             <option value="{{ $type }}">{{ $type }}</option>
                         @endforeach
@@ -171,7 +178,7 @@
             </div>
 
             {{-- Options builder (select / radio / checkbox_group) --}}
-            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type)" class="mt-6">
+            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !editingField?.is_system_managed" class="mt-6">
                 <div class="flex items-center justify-between mb-3">
                     <label class="ssbc-label mb-0">Options</label>
                     <button type="button" @click="addOption()" class="text-xs text-ssbc-gold hover:underline">+ Add Option</button>
@@ -196,6 +203,11 @@
                         </div>
                     </template>
                 </div>
+            </div>
+
+            {{-- System-managed notice --}}
+            <div x-show="editingField?.is_system_managed" class="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Options for this field are managed automatically via <a href="{{ route('admin.sectors.index') }}" class="underline font-medium">Sectors admin</a>. Labels, placeholders, and required status can still be edited here.
             </div>
 
             {{-- File config --}}
