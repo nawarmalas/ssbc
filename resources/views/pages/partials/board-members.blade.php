@@ -1,6 +1,7 @@
 {{-- resources/views/pages/partials/board-members.blade.php --}}
 @php $locale = app()->getLocale(); @endphp
 
+@if($boardMembers->isNotEmpty())
 <section class="bg-ssbc-beige">
     <div class="ssbc-container py-20">
         <div class="ssbc-rule"></div>
@@ -14,7 +15,8 @@
                 <div class="bg-white rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                      x-data="{ open: false }"
                      @mouseenter="open = true"
-                     @mouseleave="open = false">
+                     @mouseleave="open = false"
+                     @click.outside="open = false">
 
                     {{-- Photo + bio overlay --}}
                     <div class="relative overflow-hidden" style="aspect-ratio:3/4;">
@@ -53,3 +55,4 @@
         </div>
     </div>
 </section>
+@endif

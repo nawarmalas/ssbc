@@ -82,9 +82,9 @@ class BoardMemberController extends Controller
             'role_en'    => ['required', 'string', 'max:255'],
             'bio_ar'     => ['required', 'string', 'max:1000'],
             'bio_en'     => ['required', 'string', 'max:1000'],
-            'photo'      => ['nullable', 'image', 'max:2048'],
+            'photo'      => ['nullable', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'sort_order' => ['required', 'integer', 'min:0'],
-            'is_active'  => ['boolean'],
+            'is_active'  => ['nullable', 'boolean'],
         ]);
     }
 }
