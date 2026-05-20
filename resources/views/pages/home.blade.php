@@ -123,7 +123,10 @@
     </div>
 </section>
 
-{{-- 4b. Board Members --}}
+{{-- 4b. Sectors --}}
+@include('pages.partials.sectors')
+
+{{-- 4c. Board Members --}}
 @include('pages.partials.board-members')
 
 {{-- 5. Latest News --}}
