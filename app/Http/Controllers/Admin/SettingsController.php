@@ -41,24 +41,12 @@ class SettingsController extends Controller
                 'shape' => ['value' => ['label' => 'Value', 'type' => 'text']],
             ],
         ],
-        'Pillars' => [
+        // Section-heading copy only — the pillar cards themselves are the
+        // dynamic Sector records managed under the admin "Sectors" tab.
+        'Strategic Pillars' => [
             'pillars.eyebrow' => ['label' => 'Eyebrow', 'type' => 'text'],
             'pillars.heading' => ['label' => 'Heading', 'type' => 'text'],
             'pillars.body'    => ['label' => 'Body',    'type' => 'textarea'],
-            'pillars.items'   => [
-                'label' => 'Pillar cards',
-                'type'  => 'list',
-                'count' => 6,
-                'shape' => [
-                    'title' => ['label' => 'Title',       'type' => 'text'],
-                    'desc'  => ['label' => 'Description', 'type' => 'textarea'],
-                ],
-            ],
-        ],
-        'Sectors' => [
-            'sectors.eyebrow' => ['label' => 'Eyebrow', 'type' => 'text'],
-            'sectors.heading' => ['label' => 'Heading', 'type' => 'text'],
-            'sectors.body'    => ['label' => 'Body',    'type' => 'textarea'],
         ],
         'News block' => [
             'news.eyebrow'  => ['label' => 'Eyebrow',          'type' => 'text'],

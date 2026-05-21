@@ -43,7 +43,13 @@
       "Bash(php -r ' *)",
       "Bash(curl -s -b /tmp/ssbc_cookies.txt \"http://127.0.0.1:8765/admin/users/create\")",
       "Bash(rm -f /tmp/sub_cookies.txt)",
-      "Bash(curl -s -c /tmp/sub_cookies.txt \"http://127.0.0.1:8765/admin/login\")"
+      "Bash(curl -s -c /tmp/sub_cookies.txt \"http://127.0.0.1:8765/admin/login\")",
+      "Bash(/c/php-8.5.6/php.exe artisan *)",
+      "Bash(npm run *)",
+      "PowerShell(npm run build 2>&1)",
+      "Bash(grep -E '^\\(DB_CONNECTION|DB_DATABASE|APP_URL|APP_ENV\\)' .env)",
+      "Bash(ls -la database/*.sqlite)",
+      "PowerShell(Select-String -Path .env -Pattern '^\\(DB_CONNECTION|DB_DATABASE|DB_HOST|APP_ENV\\)' | ForEach-Object { $_.Line }; \"--- migrate status ---\"; & C:\\\\php-8.5.6\\\\php.exe artisan migrate:status 2>&1 | Select-Object -First 8)"
     ]
   }
 }

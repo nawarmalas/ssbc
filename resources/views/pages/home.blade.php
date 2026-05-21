@@ -100,31 +100,11 @@
     </div>
 </section>
 
-{{-- 4. Strategic Pillars --}}
-<section class="bg-white">
-    <div class="ssbc-container py-20">
-        <div class="ssbc-rule"></div>
-        <p class="ssbc-eyebrow mb-3">{{ $site->homeContent($locale, 'pillars.eyebrow', __('home.pillars.eyebrow')) }}</p>
-        <h2 class="text-3xl lg:text-4xl font-display font-bold text-ssbc-green max-w-3xl leading-tight">
-            {{ $site->homeContent($locale, 'pillars.heading', __('home.pillars.heading')) }}
-        </h2>
-        <p class="mt-6 max-w-3xl text-ssbc-dark/75 leading-relaxed">
-            {{ $site->homeContent($locale, 'pillars.body', __('home.pillars.body')) }}
-        </p>
-
-        <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-            @foreach($sectors as $sector)
-                <div class="ssbc-pillar-card">
-                    <h3 class="text-lg font-display font-semibold text-ssbc-green mb-2">{{ $sector->name() }}</h3>
-                    <p class="text-sm text-ssbc-dark/75 leading-relaxed">{{ $sector->description() }}</p>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-
-{{-- 4c. Board Members --}}
+{{-- 4. Board Members --}}
 @include('pages.partials.board-members')
+
+{{-- 4c. Strategic Pillars --}}
+@include('pages.partials.strategic-pillars')
 
 {{-- 5. Latest News --}}
 <section class="bg-ssbc-beige">

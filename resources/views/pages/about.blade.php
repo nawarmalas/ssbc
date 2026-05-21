@@ -64,6 +64,12 @@
     </div>
 </section>
 
+{{-- Board Members --}}
+@include('pages.partials.board-members')
+
+{{-- Strategic Pillars --}}
+@include('pages.partials.strategic-pillars')
+
 {{-- Three Implementation Phases --}}
 <section class="bg-ssbc-beige">
     <div class="ssbc-container py-20">

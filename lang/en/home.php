@@ -34,14 +34,6 @@ return [
         'eyebrow' => 'Strategic Pillars',
         'heading' => 'Six sectors. One bilateral agenda.',
         'body' => 'The Council\'s 2026–2030 programme concentrates institutional effort across six sectors where Syrian and Saudi interests converge most directly.',
-        'items' => [
-            ['title' => 'Agriculture & Livestock', 'desc' => 'Restoring Syria\'s agricultural base and integrating it with Saudi food security strategy.'],
-            ['title' => 'Industry & Manufacturing', 'desc' => 'Rebuilding industrial capacity through joint ventures and technology transfer.'],
-            ['title' => 'Energy & Oil', 'desc' => 'Coordinating investment in refining, distribution and downstream infrastructure.'],
-            ['title' => 'Construction & Real Estate', 'desc' => 'Mobilising capital and expertise for housing, urban renewal and major works.'],
-            ['title' => 'Tourism', 'desc' => 'Reopening cultural, religious and leisure corridors between the two nations.'],
-            ['title' => 'Cross-border Trade & Logistics', 'desc' => 'Streamlining customs, transport and finance for sustained bilateral exchange.'],
-        ],
     ],
     'news' => [
         'eyebrow' => 'Latest News',

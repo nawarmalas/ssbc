@@ -213,6 +213,12 @@
                 @foreach ($homeSchema as $section => $fields)
                     <div>
                         <h3 class="font-display font-bold text-ssbc-green text-lg mb-4">{{ $section }}</h3>
+                        @if ($section === 'Strategic Pillars')
+                            <p class="text-sm text-ssbc-sage mb-4">
+                                These fields control only the section heading text. The pillar cards
+                                themselves are managed under <strong>Dashboard &rarr; Sectors</strong>.
+                            </p>
+                        @endif
                         <div class="space-y-5">
                             @foreach ($fields as $key => $meta)
                                 @include('admin.settings._field', [

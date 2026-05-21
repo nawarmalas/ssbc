@@ -29,22 +29,23 @@
     class="sticky top-0 z-40 transition-all duration-300">
 
     <div class="ssbc-container">
-        <div class="flex items-center justify-between h-20">
+        <div class="relative flex items-center justify-between h-28 md:h-32">
 
-            {{-- Logo — swaps variant based on scrolled state (dark green vs white header) --}}
+            {{-- Logo — swaps variant based on scrolled state (dark green vs white header).
+                 Absolutely centered on mobile; reverts to normal flow at md+. --}}
             <a href="{{ route('home', ['locale' => $locale]) }}"
-               class="flex items-center shrink-0"
+               class="flex items-center shrink-0 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0"
                aria-label="{{ __('common.site_name') }}">
                 <img
                     src="{{ asset('images/logos/logo-one-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-16 md:h-20 w-auto"
+                    class="h-24 md:h-28 w-auto"
                     x-show="!scrolled"
                     loading="eager">
                 <img
                     src="{{ asset('images/logos/logo-two-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-16 md:h-20 w-auto"
+                    class="h-24 md:h-28 w-auto"
                     x-show="scrolled"
                     x-cloak
                     loading="eager">
@@ -88,7 +89,7 @@
             </div>
 
             {{-- Mobile Hamburger --}}
-            <button class="md:hidden transition-colors duration-300"
+            <button class="md:hidden ms-auto transition-colors duration-300"
                     :class="scrolled ? 'text-ssbc-green' : 'text-white'"
                     @click="open = !open"
                     aria-label="{{ __('nav.menu') }}">
