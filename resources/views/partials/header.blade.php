@@ -61,7 +61,7 @@
                     ['route' => 'contact.create','label' => 'nav.contact'],
                 ] as $link)
                 <a href="{{ route($link['route'], ['locale' => $locale]) }}"
-                   class="text-sm transition-colors duration-300"
+                   class="text-base transition-colors duration-300"
                    :class="scrolled ? 'text-ssbc-dark hover:text-ssbc-green' : 'text-white hover:text-ssbc-gold'">
                     {{ __($link['label']) }}
                 </a>
@@ -69,7 +69,7 @@
             </nav>
 
             {{-- Language Switcher (desktop) --}}
-            <div class="hidden md:flex items-center gap-2 text-sm">
+            <div class="hidden md:flex items-center gap-2 text-base">
                 @if($locale === 'en')
                     <span class="text-ssbc-gold font-semibold">EN</span>
                 @else
@@ -112,10 +112,10 @@
                 ['route' => 'contact.create','label' => 'nav.contact'],
             ] as $link)
             <a href="{{ route($link['route'], ['locale' => $locale]) }}"
-               class="block text-sm transition-colors duration-300"
+               class="block text-base transition-colors duration-300"
                :class="scrolled ? 'text-ssbc-dark' : 'text-white'">{{ __($link['label']) }}</a>
             @endforeach
-            <div class="pt-3 flex gap-3 text-sm border-t"
+            <div class="pt-3 flex gap-3 text-base border-t"
                  :class="scrolled ? 'border-ssbc-green/10' : 'border-white/20'">
                 @if($locale === 'en')
                     <span class="text-ssbc-gold font-semibold">EN</span>
