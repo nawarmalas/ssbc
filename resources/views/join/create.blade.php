@@ -9,6 +9,12 @@
             : ($formDefinition->description_en ?: $formDefinition->description_ar ?: __('join.intro')))
         : __('join.intro');
     $submitAction = $formAction ?? route('join.store', ['locale' => $locale]);
+
+    // Localised month options for date-field selects (passed to Alpine below).
+    $dateMonthOptions = [];
+    foreach (array_values((array) __('join.date.months')) as $i => $monthName) {
+        $dateMonthOptions[] = ['value' => $i + 1, 'label' => $monthName];
+    }
 @endphp
 
 @section('title', __('join.hero.heading') . ' — ' . __('common.site_name'))
@@ -136,8 +142,10 @@
                                      class="space-y-6">
                                     <template x-for="field in section.fields" :key="field.id">
                                         <div x-show="fieldIsVisible(field, ri-1)">
-                                            {{-- Label --}}
-                                            <label class="ssbc-label" :for="'f_' + field.id + '_' + (ri-1)">
+                                            {{-- Label — hidden for declaration fields, whose paragraph
+                                                 text is shown beside the checkbox instead. --}}
+                                            <label x-show="field.field_type !== 'declaration'"
+                                                   class="ssbc-label" :for="'f_' + field.id + '_' + (ri-1)">
                                                 <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
                                                 <span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
                                             </label>
@@ -185,8 +193,8 @@
                                                         <select class="ssbc-input"
                                                                 x-model="dateParts[dateKey(field, ri-1)].month"
                                                                 @change="validateField(field, ri-1)"
-                                                                :aria-label="'Month for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
-                                                            <option value="">Month</option>
+                                                                :aria-label="'{{ __('join.date.month') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">{{ __('join.date.month') }}</option>
                                                             <template x-for="month in months" :key="month.value">
                                                                 <option :value="month.value" x-text="month.label"></option>
                                                             </template>
@@ -194,8 +202,8 @@
                                                         <select class="ssbc-input"
                                                                 x-model="dateParts[dateKey(field, ri-1)].day"
                                                                 @change="validateField(field, ri-1)"
-                                                                :aria-label="'Day for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
-                                                            <option value="">Day</option>
+                                                                :aria-label="'{{ __('join.date.day') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">{{ __('join.date.day') }}</option>
                                                             <template x-for="day in dateDaysFor(field, ri-1)" :key="day">
                                                                 <option :value="day" x-text="day"></option>
                                                             </template>
@@ -203,8 +211,8 @@
                                                         <select class="ssbc-input"
                                                                 x-model="dateParts[dateKey(field, ri-1)].year"
                                                                 @change="validateField(field, ri-1)"
-                                                                :aria-label="'Year for ' + (locale === 'ar' ? field.label_ar : field.label_en)">
-                                                            <option value="">Year</option>
+                                                                :aria-label="'{{ __('join.date.year') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
+                                                            <option value="">{{ __('join.date.year') }}</option>
                                                             <template x-for="year in dateYearsFor(field)" :key="year">
                                                                 <option :value="year" x-text="year"></option>
                                                             </template>
@@ -306,8 +314,9 @@
                                                                :required="step === sIdx && field.is_required"
                                                                x-model="answers[field.id + '_' + (ri-1)]"
                                                                class="mt-1 rounded-none border-ssbc-green/40 text-ssbc-gold focus:ring-ssbc-gold">
-                                                        <span class="text-sm text-ssbc-dark leading-relaxed"
-                                                              x-text="locale === 'ar' ? field.label_ar : field.label_en"></span>
+                                                        <span class="text-sm text-ssbc-dark leading-relaxed">
+                                                            <span x-text="locale === 'ar' ? field.label_ar : field.label_en"></span><span x-show="field.is_required" class="text-red-500 ml-0.5">*</span>
+                                                        </span>
                                                     </label>
                                                 </div>
                                             </template>
@@ -378,12 +387,7 @@ function dynamicForm(sectionsJson) {
         submitError: null,
         firstErrorStep: null,
         codeToId: {},
-        months: [
-            { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
-            { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
-            { value: 7, label: 'Jul' }, { value: 8, label: 'Aug' }, { value: 9, label: 'Sep' },
-            { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' },
-        ],
+        months: @json($dateMonthOptions),
 
         init() {
             sections.forEach(s => {

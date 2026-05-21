@@ -69,6 +69,21 @@
         @apply block w-full border border-ssbc-green/20 bg-white px-3 py-2 text-ssbc-dark placeholder-ssbc-sage/70 focus:border-ssbc-gold focus:ring-0;
     }
 
+    /* Native <select> built on .ssbc-input: the symmetric px-3 padding overrides
+       the @tailwindcss/forms "room for arrow" padding, so the dropdown arrow
+       overlaps the value (most visible in RTL, where text is right-aligned).
+       Restore the gap, and mirror the arrow to the inline-start edge under RTL. */
+    select.ssbc-input {
+        background-position: right 0.75rem center;
+        padding-right: 2.5rem;
+    }
+
+    [dir="rtl"] select.ssbc-input {
+        background-position: left 0.75rem center;
+        padding-right: 0.75rem;
+        padding-left: 2.5rem;
+    }
+
     .ssbc-label {
         @apply block text-xs uppercase tracking-wider text-ssbc-green/70 mb-1.5 font-semibold;
     }

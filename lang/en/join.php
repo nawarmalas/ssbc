@@ -40,6 +40,12 @@ return [
         'trade_logistics' => 'Cross-border Trade & Logistics',
         'select' => 'Select a sector',
     ],
+    'date' => [
+        'month'  => 'Month',
+        'day'    => 'Day',
+        'year'   => 'Year',
+        'months' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    ],
     'add_company' => '+ Add another company',
     'remove' => 'Remove',
     'declaration' => 'I certify that the information and documents provided are true and complete to the best of my knowledge, and I authorise the Council to review them for the purpose of considering my membership.',

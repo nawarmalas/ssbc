@@ -160,11 +160,13 @@
                     <label class="ssbc-label">Label (Arabic) *</label>
                     <input type="text" x-model="fieldForm.label_ar" class="ssbc-input" dir="rtl">
                 </div>
-                <div>
+                {{-- Placeholder is the grey hint text inside an empty input —
+                     only meaningful for free-text field types. --}}
+                <div x-show="['text','textarea','email','tel','number','url'].includes(fieldForm.field_type)">
                     <label class="ssbc-label">Placeholder (English)</label>
                     <input type="text" x-model="fieldForm.placeholder_en" class="ssbc-input">
                 </div>
-                <div>
+                <div x-show="['text','textarea','email','tel','number','url'].includes(fieldForm.field_type)">
                     <label class="ssbc-label">Placeholder (Arabic)</label>
                     <input type="text" x-model="fieldForm.placeholder_ar" class="ssbc-input" dir="rtl">
                 </div>
