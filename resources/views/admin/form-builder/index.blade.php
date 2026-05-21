@@ -77,10 +77,12 @@
                                           class="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">inactive</span>
                                     <span x-show="fieldIsSystemManaged(field)"
                                           class="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-300">🔒 system</span>
+                                    <span x-show="field.options_source === 'sectors' && !fieldIsSystemManaged(field)"
+                                          class="ml-1 text-xs bg-ssbc-gold/20 text-ssbc-green px-1.5 py-0.5 rounded">↻ Sectors</span>
                                 </div>
                                 <button type="button" @click="openFieldModal(field, section.id)"
                                         class="text-xs text-ssbc-sage hover:text-ssbc-green px-2">Edit</button>
-                                <a x-show="fieldIsSystemManaged(field)"
+                                <a x-show="fieldIsSystemManaged(field) || field.options_source === 'sectors'"
                                    href="{{ route('admin.sectors.index') }}"
                                    class="text-xs text-ssbc-gold hover:underline px-2">Manage Sectors ↗</a>
                                 <button x-show="!fieldIsSystemManaged(field)"
@@ -201,8 +203,19 @@
                 </div>
             </div>
 
+            {{-- Sector-filled options toggle (select / radio / checkbox_group) --}}
+            <label x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !fieldIsSystemManaged(editingField)"
+                   x-cloak
+                   class="mt-6 flex items-center gap-2 cursor-pointer text-sm text-ssbc-dark">
+                <input type="checkbox"
+                       :checked="fieldForm.options_source === 'sectors'"
+                       @change="fieldForm.options_source = $event.target.checked ? 'sectors' : 'manual'"
+                       class="rounded border-ssbc-green/40">
+                Fill options automatically from the Sectors list
+            </label>
+
             {{-- Options builder (select / radio / checkbox_group) --}}
-            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !fieldIsSystemManaged(editingField)" class="mt-6">
+            <div x-show="['select','radio','checkbox_group'].includes(fieldForm.field_type) && !fieldIsSystemManaged(editingField) && fieldForm.options_source !== 'sectors'" class="mt-6">
                 <div class="flex items-center justify-between mb-3">
                     <label class="ssbc-label mb-0">Options</label>
                     <button type="button" @click="addOption()" class="text-xs text-ssbc-gold hover:underline">+ Add Option</button>
@@ -229,9 +242,10 @@
                 </div>
             </div>
 
-            {{-- System-managed notice --}}
-            <div x-show="fieldIsSystemManaged(editingField)" class="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Options for this field are managed automatically via <a href="{{ route('admin.sectors.index') }}" class="underline font-medium">Sectors admin</a>. Labels, placeholders, and required status can still be edited here.
+            {{-- Sectors-managed notice (system field, or sector-filled options) --}}
+            <div x-show="fieldIsSystemManaged(editingField) || fieldForm.options_source === 'sectors'" x-cloak
+                 class="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Options for this field are filled automatically from the <a href="{{ route('admin.sectors.index') }}" class="underline font-medium">Sectors list</a> and stay in sync. Labels, placeholders, and required status can still be edited here.
             </div>
 
             {{-- File config --}}
@@ -307,7 +321,8 @@ function formBuilder() {
             section_id: null, label_en: '', label_ar: '',
             placeholder_en: '', placeholder_ar: '',
             field_type: 'text', is_required: true, is_active: true,
-            options: [], validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 5 },
+            options: [], options_source: 'manual',
+            validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 5 },
         },
 
         confirmModal: { open: false, message: '', warning: '', action: () => {} },
@@ -445,6 +460,7 @@ function formBuilder() {
                 is_required: !!field.is_required,
                 is_active: !!field.is_active,
                 options: field.options ? JSON.parse(JSON.stringify(field.options)) : [],
+                options_source: field.options_source || 'manual',
                 validation_rules: field.validation_rules || {},
                 file_config: field.file_config || { accepted_types: ['pdf'], max_size_mb: 5 },
             } : {
@@ -452,7 +468,7 @@ function formBuilder() {
                 label_en: '', label_ar: '',
                 placeholder_en: '', placeholder_ar: '',
                 field_type: 'text', is_required: true, is_active: true,
-                options: [], validation_rules: {},
+                options: [], options_source: 'manual', validation_rules: {},
                 file_config: { accepted_types: ['pdf'], max_size_mb: 5 },
             };
             this.fieldModalOpen = true;
@@ -467,7 +483,13 @@ function formBuilder() {
 
             this.fieldForm.field_type = type;
 
-            if (['select','radio','checkbox_group'].includes(type) && !this.fieldForm.options.length) {
+            if (!['select','radio','checkbox_group'].includes(type)) {
+                this.fieldForm.options_source = 'manual';
+            }
+
+            if (['select','radio','checkbox_group'].includes(type)
+                && this.fieldForm.options_source !== 'sectors'
+                && !this.fieldForm.options.length) {
                 this.fieldForm.options = [
                     { label_en: '', label_ar: '', value: '' },
                     { label_en: '', label_ar: '', value: '' },
@@ -534,7 +556,9 @@ function formBuilder() {
 
         normalizedFieldPayload() {
             const payload = JSON.parse(JSON.stringify(this.fieldForm));
-            if (Array.isArray(payload.options)) {
+            if (payload.options_source === 'sectors') {
+                payload.options = [];
+            } else if (Array.isArray(payload.options)) {
                 payload.options = payload.options
                     .map(opt => ({
                         label_en: (opt.label_en || '').trim(),
@@ -550,7 +574,8 @@ function formBuilder() {
             if (!payload.label_en?.trim() || !payload.label_ar?.trim()) {
                 return 'Both English and Arabic labels are required.';
             }
-            if (['select','radio','checkbox_group'].includes(payload.field_type)) {
+            if (['select','radio','checkbox_group'].includes(payload.field_type)
+                && payload.options_source !== 'sectors') {
                 if (!payload.options?.length) {
                     return 'Add at least one option for this field type.';
                 }

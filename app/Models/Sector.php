@@ -54,4 +54,19 @@ class Sector extends Model
     {
         return app()->getLocale() === 'ar' ? ($this->description_ar ?: $this->description_en) : ($this->description_en ?: $this->description_ar);
     }
+
+    /**
+     * Active sectors shaped as form-field options ([value, label_en, label_ar]).
+     * Shared by the form builder and SectorObserver so sectors-backed fields
+     * stay in a single, consistent shape.
+     */
+    public static function activeFieldOptions(): array
+    {
+        return static::active()->get()
+            ->map(fn (Sector $s) => [
+                'value'    => $s->slug,
+                'label_en' => $s->name_en,
+                'label_ar' => $s->name_ar,
+            ])->values()->all();
+    }
 }

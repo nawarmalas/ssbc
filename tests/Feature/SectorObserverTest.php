@@ -36,6 +36,7 @@ class SectorObserverTest extends TestCase
             'is_required'       => true,
             'is_active'         => true,
             'is_system_managed' => true,
+            'options_source'    => 'sectors',
             'order_index'       => 0,
             'options'           => [],
         ]);
@@ -103,6 +104,46 @@ class SectorObserverTest extends TestCase
         $field->refresh();
         $this->assertCount(1, $field->options);
         $this->assertSame('tourism', $field->options[0]['value']);
+    }
+
+    public function test_observer_syncs_all_sectors_backed_fields(): void
+    {
+        $section     = $this->makeSection();
+        $systemField = $this->makeSectorsField($section);
+
+        // A second, non-system field that opts into the sectors option source.
+        $section2 = FormSection::create([
+            'form_id'       => 'join-us',
+            'title_en'      => 'Other',
+            'title_ar'      => 'أخرى',
+            'is_repeatable' => false,
+            'order_index'   => 1,
+        ]);
+        $customField = FormField::create([
+            'section_id'        => $section2->id,
+            'label_en'          => 'Sectors of Interest',
+            'label_ar'          => 'قطاعات الاهتمام',
+            'field_type'        => 'checkbox_group',
+            'is_required'       => false,
+            'is_active'         => true,
+            'is_system_managed' => false,
+            'options_source'    => 'sectors',
+            'order_index'       => 0,
+            'options'           => [],
+        ]);
+
+        Sector::create([
+            'name_en' => 'Agriculture', 'name_ar' => 'الزراعة',
+            'description_en' => 'D', 'description_ar' => 'د',
+            'sort_order' => 1, 'is_active' => true,
+        ]);
+
+        $systemField->refresh();
+        $customField->refresh();
+
+        $this->assertCount(1, $systemField->options);
+        $this->assertCount(1, $customField->options);
+        $this->assertSame('agriculture', $customField->options[0]['value']);
     }
 
     public function test_observer_invalidates_form_cache(): void

@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\FormField;
 use App\Models\FormDefinition;
 use App\Models\FormSection;
+use App\Models\Sector;
 use App\Services\FormService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FormBuilderController extends Controller
 {
@@ -201,6 +203,7 @@ class FormBuilderController extends Controller
             'options.*.label_en' => ['required_with:options', 'string'],
             'options.*.label_ar' => ['required_with:options', 'string'],
             'options.*.value'    => ['required_with:options', 'string'],
+            'options_source'     => ['nullable', Rule::in(['manual', 'sectors'])],
             'validation_rules'   => ['nullable', 'array'],
             'file_config'        => ['nullable', 'array'],
             'file_config.accepted_types' => ['nullable', 'array'],
@@ -211,6 +214,19 @@ class FormBuilderController extends Controller
             if (isset($data[$key])) {
                 $data[$key] = strip_tags($data[$key]);
             }
+        }
+
+        $data['options_source'] = $data['options_source'] ?? 'manual';
+
+        // Sectors-backed fields: options are owned by the Sector list. Fill them
+        // server-side so they always match — any client-submitted options are ignored.
+        if ($data['options_source'] === 'sectors') {
+            if (! in_array($data['field_type'], ['select', 'radio', 'checkbox_group'], true)) {
+                throw ValidationException::withMessages([
+                    'options_source' => 'Sector-filled options are only available for select, radio, or checkbox group fields.',
+                ]);
+            }
+            $data['options'] = Sector::activeFieldOptions();
         }
 
         // System-managed fields: only allow safe keys to be updated

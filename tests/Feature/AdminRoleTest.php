@@ -13,7 +13,7 @@ class AdminRoleTest extends TestCase
 
     public function test_news_subadmin_can_only_access_news_area(): void
     {
-        $subadmin = User::factory()->create(['role' => User::ROLE_NEWS_SUBADMIN]);
+        $subadmin = User::factory()->create(['role' => User::ROLE_SUBADMIN, 'permissions' => ['news_write']]);
 
         $this->actingAs($subadmin)->get('/admin/news')->assertOk();
         $this->actingAs($subadmin)->get('/admin/dashboard')->assertForbidden();
@@ -25,7 +25,7 @@ class AdminRoleTest extends TestCase
 
     public function test_news_subadmin_cannot_publish_news(): void
     {
-        $subadmin = User::factory()->create(['role' => User::ROLE_NEWS_SUBADMIN]);
+        $subadmin = User::factory()->create(['role' => User::ROLE_SUBADMIN, 'permissions' => ['news_write']]);
 
         $this->actingAs($subadmin)->post('/admin/news', [
             'title_en' => 'Subadmin Draft',
@@ -44,7 +44,7 @@ class AdminRoleTest extends TestCase
 
     public function test_news_subadmin_cannot_edit_published_news(): void
     {
-        $subadmin = User::factory()->create(['role' => User::ROLE_NEWS_SUBADMIN]);
+        $subadmin = User::factory()->create(['role' => User::ROLE_SUBADMIN, 'permissions' => ['news_write']]);
         $post = NewsPost::create([
             'slug' => 'published-post',
             'title_en' => 'Published',
@@ -64,7 +64,7 @@ class AdminRoleTest extends TestCase
     public function test_admin_can_publish_subadmin_draft(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-        $subadmin = User::factory()->create(['role' => User::ROLE_NEWS_SUBADMIN]);
+        $subadmin = User::factory()->create(['role' => User::ROLE_SUBADMIN, 'permissions' => ['news_write']]);
         $post = NewsPost::create([
             'slug' => 'draft-post',
             'title_en' => 'Draft',

@@ -17,24 +17,20 @@ class SectorObserver
     private function sync(): void
     {
         DB::afterCommit(function () {
-            $field = FormField::where('code', 'sectors_of_operation')->first();
-            if (! $field) return;
+            $fields = FormField::where('options_source', 'sectors')->with('section')->get();
+            if ($fields->isEmpty()) return;
 
-            $options = Sector::query()
-                ->whereNull('deleted_at')
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->get()
-                ->map(fn($s) => [
-                    'value'    => $s->slug,
-                    'label_en' => $s->name_en,
-                    'label_ar' => $s->name_ar,
-                ])->values()->all();
+            $options = Sector::activeFieldOptions();
+            $formIds = [];
 
-            $field->forceFill(['options' => $options])->saveQuietly();
+            foreach ($fields as $field) {
+                $field->forceFill(['options' => $options])->saveQuietly();
+                $formIds[$field->section?->form_id ?? 'join-us'] = true;
+            }
 
-            $formId = $field->section?->form_id ?? 'join-us';
-            FormService::invalidateCache($formId);
+            foreach (array_keys($formIds) as $formId) {
+                FormService::invalidateCache($formId);
+            }
         });
     }
 }

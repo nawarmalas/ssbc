@@ -49,7 +49,12 @@
       "PowerShell(npm run build 2>&1)",
       "Bash(grep -E '^\\(DB_CONNECTION|DB_DATABASE|APP_URL|APP_ENV\\)' .env)",
       "Bash(ls -la database/*.sqlite)",
-      "PowerShell(Select-String -Path .env -Pattern '^\\(DB_CONNECTION|DB_DATABASE|DB_HOST|APP_ENV\\)' | ForEach-Object { $_.Line }; \"--- migrate status ---\"; & C:\\\\php-8.5.6\\\\php.exe artisan migrate:status 2>&1 | Select-Object -First 8)"
+      "PowerShell(Select-String -Path .env -Pattern '^\\(DB_CONNECTION|DB_DATABASE|DB_HOST|APP_ENV\\)' | ForEach-Object { $_.Line }; \"--- migrate status ---\"; & C:\\\\php-8.5.6\\\\php.exe artisan migrate:status 2>&1 | Select-Object -First 8)",
+      "Bash(./php.exe -m)",
+      "Bash(./php.exe --ini)",
+      "Bash(C:/php-8.5.6/php.exe -d extension=C:/php-8.5.6/ext/php_pdo_sqlite.dll vendor/phpunit/phpunit/phpunit --filter AdminUserManagementTest)",
+      "Bash(C:/php-8.5.6/php.exe -d extension=C:/php-8.5.6/ext/php_pdo_sqlite.dll vendor/phpunit/phpunit/phpunit --filter AdminRoleTest)",
+      "Bash(/c/php-8.5.6/php.exe -l database/migrations/2026_05_21_000002_unset_system_managed_on_sectors_field.php)"
     ]
   }
 }

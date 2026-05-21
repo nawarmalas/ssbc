@@ -13,7 +13,7 @@ class FormField extends Model
         'placeholder_en', 'placeholder_ar',
         'field_type', 'is_required', 'is_active', 'is_system_managed',
         'order_index',
-        'options', 'validation_rules', 'conditional_logic', 'file_config',
+        'options', 'options_source', 'validation_rules', 'conditional_logic', 'file_config',
     ];
 
     protected function casts(): array
@@ -52,7 +52,7 @@ class FormField extends Model
      * - checkbox_group: decode JSON, map values to option labels, join with ", "
      * - select/radio: map single value to option label
      * - declaration: "Accepted" / "—"
-     * - sectors_of_operation: fallback to Sector model (incl. trashed) when label not found
+     * - sectors-backed fields: fallback to Sector model (incl. trashed) when label not found
      * - other types: trimmed string, or em-dash when empty
      */
     public function formatAnswer(?string $raw, string $locale = 'en'): string
@@ -71,7 +71,7 @@ class FormField extends Model
             }
 
             // Fallback: resolve deleted sectors by slug
-            if ($this->code === 'sectors_of_operation') {
+            if ($this->options_source === 'sectors') {
                 $sector = \App\Models\Sector::withTrashed()->where('slug', $value)->first();
                 if ($sector) {
                     return $locale === 'ar'
