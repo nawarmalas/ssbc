@@ -192,8 +192,8 @@ class FormBuilderController extends Controller
     {
         $data = $request->validate([
             'section_id'         => ['required', 'integer', 'exists:form_sections,id'],
-            'label_en'           => ['required', 'string', 'max:500'],
-            'label_ar'           => ['required', 'string', 'max:500'],
+            'label_en'           => ['required', 'string', 'max:2000'],
+            'label_ar'           => ['required', 'string', 'max:2000'],
             'placeholder_en'     => ['nullable', 'string', 'max:255'],
             'placeholder_ar'     => ['nullable', 'string', 'max:255'],
             'field_type'         => ['required', Rule::in(self::FIELD_TYPES)],

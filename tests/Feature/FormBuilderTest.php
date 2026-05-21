@@ -150,6 +150,30 @@ class FormBuilderTest extends TestCase
         $this->assertDatabaseMissing('form_fields', ['id' => $fieldId]);
     }
 
+    public function test_admin_can_save_field_with_long_declaration_label(): void
+    {
+        $section = FormSection::create([
+            'form_id' => 'join-us',
+            'title_en' => 'S',
+            'title_ar' => 'S',
+            'order_index' => 0,
+        ]);
+
+        // Declaration labels are paragraph-length — longer than the old
+        // VARCHAR(255) limit. This must save without a 500.
+        $longLabel = str_repeat('a', 800);
+
+        $this->actingAsAdmin()->postJson(route('admin.forms.fields.store', $this->joinForm()), [
+            'section_id'  => $section->id,
+            'label_en'    => $longLabel,
+            'label_ar'    => $longLabel,
+            'field_type'  => 'declaration',
+            'is_required' => true,
+        ])->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('form_fields', ['label_en' => $longLabel]);
+    }
+
     public function test_cannot_update_options_on_system_managed_field(): void
     {
         $admin = \App\Models\User::factory()->create(['role' => 'admin']);
