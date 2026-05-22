@@ -7,7 +7,7 @@
         <div class="ssbc-rule"></div>
         <p class="ssbc-eyebrow mb-3">Board Members</p>
         <h2 class="text-3xl lg:text-4xl font-display font-bold text-ssbc-green leading-tight" dir="rtl" lang="ar">
-            أعضاء المجلس
+            أعضاء مجلس الإدارة
         </h2>
 
         <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">

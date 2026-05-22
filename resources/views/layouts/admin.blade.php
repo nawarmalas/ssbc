@@ -36,12 +36,12 @@
         $nav[] = ['key' => 'news', 'route' => 'admin.news.index', 'label' => __('admin.news'), 'badge' => null];
     }
     if ($authUser?->isAdmin()) {
-        $nav[] = ['key' => 'forms',       'route' => 'admin.forms.index',       'label' => __('admin.form_builder'), 'badge' => null];
-        $nav[] = ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'),  'badge' => $unread['submissions']];
-        $nav[] = ['key' => 'contact',     'route' => 'admin.contact.index',     'label' => __('admin.contact'),      'badge' => $unread['contact']];
-        $nav[] = ['key' => 'users',       'route' => 'admin.users.index',       'label' => 'Admin Users',            'badge' => null];
-        $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'Board Members', 'badge' => null];
-        $nav[] = ['key' => 'sectors', 'route' => 'admin.sectors.index', 'label' => 'القطاعات / Sectors', 'badge' => null];
+        $nav[] = ['key' => 'forms',         'route' => 'admin.forms.index',         'label' => __('admin.form_builder'), 'badge' => null];
+        $nav[] = ['key' => 'submissions',   'route' => 'admin.submissions.index',   'label' => __('admin.submissions'),  'badge' => $unread['submissions']];
+        $nav[] = ['key' => 'contact',       'route' => 'admin.contact.index',       'label' => __('admin.contact'),      'badge' => $unread['contact']];
+        $nav[] = ['key' => 'users',         'route' => 'admin.users.index',         'label' => 'Admin Users',            'badge' => null];
+        $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'Board Members',          'badge' => null];
+        $nav[] = ['key' => 'sectors',       'route' => 'admin.sectors.index',       'label' => 'Sectors',                'badge' => null];
     }
     if ($authUser?->canCustomizeSite()) {
         $nav[] = ['key' => 'settings', 'route' => 'admin.settings.edit', 'label' => __('admin.site_customization'), 'badge' => null];
