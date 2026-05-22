@@ -17,9 +17,11 @@
     }
 @endphp
 
-@section('title', __('join.hero.heading') . ' — ' . __('common.site_name'))
-
 @section('title', $pageTitle . ' - ' . __('common.site_name'))
+@section('meta_description', isset($formDefinition) && $formDefinition->isPrivate() ? $pageIntro : __('seo.join.description'))
+@if((isset($formDefinition) && $formDefinition->isPrivate()) || (isset($preview) && $preview))
+    @section('robots', 'noindex, nofollow')
+@endif
 
 @section('content')
 

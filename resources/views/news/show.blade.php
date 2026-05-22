@@ -3,7 +3,10 @@
 @php $locale = app()->getLocale(); @endphp
 
 @section('title', $post->title($locale) . ' — ' . __('common.site_name'))
-@section('meta_description', $post->excerpt($locale) ?? __('common.site_name'))
+@section('meta_description', $post->excerpt($locale) ?: __('seo.news_index.description'))
+@if($post->featuredImageUrl())
+    @section('og_image', App\Support\Seo::absoluteUrl($post->featuredImageUrl()))
+@endif
 
 @section('content')
 

@@ -17,8 +17,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JoinController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PrivateFormController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::get('/', function (Request $request) {
     $accept = strtolower($request->header('Accept-Language', ''));
