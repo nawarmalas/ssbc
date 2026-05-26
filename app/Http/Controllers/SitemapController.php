@@ -10,26 +10,49 @@ class SitemapController extends Controller
 {
     public function __invoke(): Response
     {
-        $urls = collect([
-            ['loc' => Seo::absoluteUrl('/en'), 'priority' => '1.0', 'changefreq' => 'weekly'],
-            ['loc' => Seo::absoluteUrl('/ar'), 'priority' => '1.0', 'changefreq' => 'weekly'],
-            ['loc' => Seo::absoluteUrl('/en/about'), 'priority' => '0.8', 'changefreq' => 'monthly'],
-            ['loc' => Seo::absoluteUrl('/ar/about'), 'priority' => '0.8', 'changefreq' => 'monthly'],
-            ['loc' => Seo::absoluteUrl('/en/news'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-            ['loc' => Seo::absoluteUrl('/ar/news'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-            ['loc' => Seo::absoluteUrl('/en/join'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => Seo::absoluteUrl('/ar/join'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => Seo::absoluteUrl('/en/contact'), 'priority' => '0.6', 'changefreq' => 'monthly'],
-            ['loc' => Seo::absoluteUrl('/ar/contact'), 'priority' => '0.6', 'changefreq' => 'monthly'],
-        ]);
+        $pages = [
+            ['path' => '', 'priority' => '1.0', 'changefreq' => 'weekly'],
+            ['path' => '/about', 'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['path' => '/news', 'priority' => '0.8', 'changefreq' => 'weekly'],
+            ['path' => '/join', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            ['path' => '/contact', 'priority' => '0.6', 'changefreq' => 'monthly'],
+        ];
+
+        $urls = collect();
+
+        foreach ($pages as $page) {
+            $enUrl = Seo::absoluteUrl('/en' . $page['path']);
+            $arUrl = Seo::absoluteUrl('/ar' . $page['path']);
+
+            foreach (['en' => $enUrl, 'ar' => $arUrl] as $lang => $loc) {
+                $urls->push([
+                    'loc'        => $loc,
+                    'priority'   => $page['priority'],
+                    'changefreq' => $page['changefreq'],
+                    'alternates' => [
+                        ['hreflang' => 'en', 'href' => $enUrl],
+                        ['hreflang' => 'ar', 'href' => $arUrl],
+                        ['hreflang' => 'x-default', 'href' => $enUrl],
+                    ],
+                ]);
+            }
+        }
 
         NewsPost::published()->get()->each(function (NewsPost $post) use ($urls): void {
-            foreach (['en', 'ar'] as $locale) {
+            $enUrl = Seo::routeUrl('news.show', ['locale' => 'en', 'slug' => $post->slug]);
+            $arUrl = Seo::routeUrl('news.show', ['locale' => 'ar', 'slug' => $post->slug]);
+
+            foreach (['en' => $enUrl, 'ar' => $arUrl] as $lang => $loc) {
                 $urls->push([
-                    'loc' => Seo::routeUrl('news.show', ['locale' => $locale, 'slug' => $post->slug]),
-                    'lastmod' => $post->updated_at?->toDateString(),
-                    'priority' => '0.7',
+                    'loc'        => $loc,
+                    'lastmod'    => $post->updated_at?->toDateString(),
+                    'priority'   => '0.7',
                     'changefreq' => 'monthly',
+                    'alternates' => [
+                        ['hreflang' => 'en', 'href' => $enUrl],
+                        ['hreflang' => 'ar', 'href' => $arUrl],
+                        ['hreflang' => 'x-default', 'href' => $enUrl],
+                    ],
                 ]);
             }
         });

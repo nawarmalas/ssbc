@@ -1,4 +1,17 @@
 User-agent: *
-Disallow: /admin
+Allow: /
+
+Disallow: /admin/
+Disallow: /en/join/thanks
+Disallow: /ar/join/thanks
+Disallow: /en/contact/thanks
+Disallow: /ar/contact/thanks
+Disallow: /en/forms/
+Disallow: /ar/forms/
+Disallow: /api/
+Disallow: /*?token=
+Disallow: /*?_token=
+
+Crawl-delay: 10
 
 Sitemap: https://sysabc.org/sitemap.xml

@@ -96,6 +96,22 @@ class Seo
         return $description;
     }
 
+    public static function defaultKeywords(?string $routeName, string $locale): string
+    {
+        $key = match ($routeName) {
+            'home' => 'seo.home.keywords',
+            'about' => 'seo.about.keywords',
+            'news.index' => 'seo.news_index.keywords',
+            'join.create' => 'seo.join.keywords',
+            'contact.create' => 'seo.contact.keywords',
+            default => 'seo.default.keywords',
+        };
+
+        $keywords = __($key, [], $locale);
+
+        return $keywords === $key ? '' : $keywords;
+    }
+
     public static function shouldNoindex(?string $routeName): bool
     {
         if (! $routeName) {
@@ -118,7 +134,21 @@ class Seo
             'name' => __('common.site_name', [], 'en'),
             'alternateName' => __('common.site_name', [], 'ar'),
             'url' => self::root(),
-            'logo' => self::absoluteUrl('/images/logos/logo-two-tone.png'),
+            'logo' => [
+                '@type' => 'ImageObject',
+                'url' => self::absoluteUrl('/images/logos/logo-two-tone.png'),
+            ],
+            'description' => 'The Syrian Saudi Business Council is an official bilateral platform connecting Syrian and Saudi business communities for trade, investment, and economic cooperation.',
+            'foundingLocation' => [
+                '@type' => 'Place',
+                'name' => 'Damascus, Syria',
+            ],
+            'areaServed' => ['Syria', 'Saudi Arabia'],
+            'contactPoint' => [
+                '@type' => 'ContactPoint',
+                'contactType' => 'membership',
+                'url' => self::root().'/en/join',
+            ],
             'email' => $emails[0] ?? null,
             'telephone' => $phones[0] ?? null,
             'sameAs' => collect($siteSettings->socials())->pluck('url')->values()->all(),
@@ -148,5 +178,43 @@ class Seo
                 ],
             ],
         ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    public static function websiteSchema(): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'url' => self::root(),
+            'name' => __('common.site_name', [], 'en'),
+            'inLanguage' => ['en', 'ar'],
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => self::root() . '/en/news?q={search_term_string}',
+                'query-input' => 'required name=search_term_string',
+            ],
+        ];
+    }
+
+    public static function breadcrumbSchema(array $items): array
+    {
+        $listItems = [];
+        foreach ($items as $i => $item) {
+            $entry = [
+                '@type' => 'ListItem',
+                'position' => $i + 1,
+                'name' => $item['name'],
+            ];
+            if (isset($item['url'])) {
+                $entry['item'] = $item['url'];
+            }
+            $listItems[] = $entry;
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $listItems,
+        ];
     }
 }

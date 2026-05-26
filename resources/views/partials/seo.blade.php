@@ -9,17 +9,41 @@
     $image = trim($__env->yieldContent('og_image', Seo::absoluteUrl('/images/logos/logo-two-tone.png')));
     $type = trim($__env->yieldContent('og_type', $routeName === 'news.show' ? 'article' : 'website'));
     $robots = trim($__env->yieldContent('robots', Seo::shouldNoindex($routeName) ? 'noindex, nofollow' : 'index, follow'));
+    $keywords = trim($__env->yieldContent('keywords', Seo::defaultKeywords($routeName, $locale)));
     $alternates = Seo::localizedAlternates();
     $schemas = [Seo::organizationSchema($siteSettings)];
 
+    if ($routeName === 'home') {
+        $schemas[] = Seo::websiteSchema();
+    }
+
     if ($routeName === 'news.show' && isset($post) && $post instanceof \App\Models\NewsPost) {
         $schemas[] = Seo::newsArticleSchema($post, $locale);
+        $schemas[] = Seo::breadcrumbSchema([
+            ['name' => __('common.site_name'), 'url' => Seo::routeUrl('home', ['locale' => $locale])],
+            ['name' => __('nav.news', [], $locale), 'url' => Seo::routeUrl('news.index', ['locale' => $locale])],
+            ['name' => $post->title($locale)],
+        ]);
+    } elseif (in_array($routeName, ['about', 'join.create', 'contact.create', 'news.index'], true)) {
+        $pageNames = [
+            'about'          => __('nav.about', [], $locale),
+            'join.create'    => __('nav.join', [], $locale),
+            'contact.create' => __('nav.contact', [], $locale),
+            'news.index'     => __('nav.news', [], $locale),
+        ];
+        $schemas[] = Seo::breadcrumbSchema([
+            ['name' => __('common.site_name'), 'url' => Seo::routeUrl('home', ['locale' => $locale])],
+            ['name' => $pageNames[$routeName]],
+        ]);
     }
 @endphp
 
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $description }}">
 <meta name="robots" content="{{ $robots }}">
+@if($keywords)
+<meta name="keywords" content="{{ $keywords }}">
+@endif
 <link rel="canonical" href="{{ $canonical }}">
 
 @foreach($alternates as $hreflang => $href)

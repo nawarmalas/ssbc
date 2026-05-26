@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CanonicalUrl;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SetLocale;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(CanonicalUrl::class);
         $middleware->alias([
             'admin.role'       => EnsureUserHasRole::class,
             'admin.permission' => EnsureUserHasPermission::class,
