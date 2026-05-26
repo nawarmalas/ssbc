@@ -58,4 +58,51 @@ class JoinFormTest extends TestCase
         $this->assertDatabaseHas('form_submissions', ['display_name' => 'Ahmad Al-Souri']);
         $this->assertDatabaseHas('form_answers', ['answer_value' => 'ahmad@example.com']);
     }
+
+    public function test_tel_field_accepts_00_international_prefix(): void
+    {
+        Mail::fake();
+
+        $section = FormSection::create([
+            'form_id' => 'join-us',
+            'title_en' => 'Personal',
+            'title_ar' => 'Personal',
+            'is_repeatable' => false,
+            'order_index' => 0,
+        ]);
+
+        $nameField = FormField::create([
+            'section_id' => $section->id,
+            'label_en' => 'Full Name',
+            'label_ar' => 'Full Name',
+            'field_type' => 'text',
+            'is_required' => true,
+            'is_active' => true,
+            'order_index' => 0,
+        ]);
+
+        $phoneField = FormField::create([
+            'section_id' => $section->id,
+            'label_en' => 'Mobile Number with Country Code',
+            'label_ar' => 'Mobile Number with Country Code',
+            'field_type' => 'tel',
+            'is_required' => true,
+            'is_active' => true,
+            'order_index' => 1,
+        ]);
+
+        $this->post('/en/join', [
+            '_token' => csrf_token(),
+            'answers' => [
+                $nameField->id => [0 => 'Ahmad Al-Souri'],
+                $phoneField->id => [0 => '00966 50 000 0000'],
+            ],
+            '_repeats' => [],
+        ])->assertRedirect('/en/join/thanks');
+
+        $this->assertDatabaseHas('form_answers', [
+            'field_id' => $phoneField->id,
+            'answer_value' => '00966500000000',
+        ]);
+    }
 }

@@ -22,7 +22,7 @@ class FormSubmissionService
 
         $this->normaliseAnswers($request, $form);
         $request->validate($this->rulesFor($request, $form), [
-            'answers.*.*.regex'          => 'Please enter a phone number with country code, e.g. +966 50 000 0000.',
+            'answers.*.*.regex'          => 'Please enter a phone number with country code, e.g. +966 50 000 0000 or 00966 50 000 0000.',
             'answers.*.*.before'         => 'You must be at least 18 years old.',
             'answers.*.*.before_or_equal'=> 'Date cannot be in the future.',
             'answers.*.*.min'            => 'Please select at least one option.',
@@ -77,7 +77,7 @@ class FormSubmissionService
         $answers = (array) $request->input('answers', []);
         $today   = now()->toDateString();
         $dobMax  = now()->subYears(18)->toDateString();
-        $phoneRegex = 'regex:/^\+[1-9]\d{7,14}$/';
+        $phoneRegex = 'regex:/^(?:\+[1-9]|0[1-9])\d{7,14}$/';
 
         foreach ($form as $section) {
             $count = $section->is_repeatable ? max(1, (int) ($repeats[$section->id] ?? 1)) : 1;

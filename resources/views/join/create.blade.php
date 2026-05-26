@@ -370,8 +370,8 @@ function dynamicForm(sectionsJson) {
     const sections = sectionsJson;
     const locale = document.documentElement.lang || 'en';
 
-    // International phone: +<digits, 8-15>
-    const phoneRegex = /^\+[1-9]\d{7,14}$/;
+    // International phone: +<digits, 8-15> or 00<digits, 8-15>
+    const phoneRegex = /^(?:\+[1-9]|00[1-9])\d{7,14}$/;
     // Loose URL pattern — must start with http(s):// and have a host
     const urlRegex = /^https?:\/\/[^\s.]+\.[^\s]+$/i;
 
@@ -587,7 +587,7 @@ function dynamicForm(sectionsJson) {
             }
             if (field.field_type === 'tel') {
                 if (!phoneRegex.test(String(val).replace(/\s/g, ''))) {
-                    this.stepErrors[key] = 'Include country code, e.g. +966 50 000 0000';
+                    this.stepErrors[key] = 'Include country code, e.g. +966 50 000 0000 or 00966 50 000 0000';
                     return false;
                 }
             }
