@@ -161,6 +161,7 @@
                                                     :id="'f_' + field.id + '_' + (ri-1)"
                                                     :type="field.field_type === 'url' ? 'text' : field.field_type"
                                                     :inputmode="field.field_type === 'tel' ? 'tel' : (field.field_type === 'number' ? 'numeric' : null)"
+                                                    :dir="['tel','number'].includes(field.field_type) ? 'ltr' : null"
                                                     :name="'answers[' + field.id + '][' + (ri-1) + ']'"
                                                     :placeholder="(locale === 'ar' ? field.placeholder_ar : field.placeholder_en) || ''"
                                                     :required="step === sIdx && field.is_required && ri === 1"
@@ -169,6 +170,7 @@
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     @blur="validateField(field, ri-1)"
                                                     class="ssbc-input"
+                                                    :class="['tel','number'].includes(field.field_type) ? 'text-left' : ''"
                                                 >
                                             </template>
 
@@ -291,7 +293,7 @@
                                                         <div x-show="!fileNames[field.id + '_' + (ri-1)]">
                                                             <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
                                                             <p class="text-xs text-ssbc-sage/70 mt-1"
-                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 5) + ' MB'"></p>
+                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 10) + ' MB'"></p>
                                                         </div>
                                                         <div x-show="fileNames[field.id + '_' + (ri-1)]"
                                                              class="flex items-center justify-center gap-2">
@@ -399,6 +401,27 @@ function dynamicForm(sectionsJson) {
                     if (f.code) this.codeToId[f.code] = f.id;
                 });
             });
+
+            // Restore saved form state after a Laravel validation redirect.
+            const saved = sessionStorage.getItem('ssbc_form');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    this.answers = Object.assign(this.answers, state.answers || {});
+                    this.checkboxAnswers = Object.assign(this.checkboxAnswers, state.checkboxAnswers || {});
+                    this.dateParts = Object.assign(this.dateParts, state.dateParts || {});
+                    // Only restore step when Laravel has flashed validation errors.
+                    const hasErrors = {{ $errors->any() ? 'true' : 'false' }};
+                    if (hasErrors && state.currentStep) {
+                        this.step = state.currentStep;
+                    }
+                } catch(e) {}
+            }
+
+            // Auto-save whenever any answer state changes.
+            this.$watch('answers', () => this.saveToSession());
+            this.$watch('checkboxAnswers', () => this.saveToSession());
+            this.$watch('dateParts', () => this.saveToSession());
         },
 
         fieldIsVisible(field, ri) {
@@ -532,7 +555,7 @@ function dynamicForm(sectionsJson) {
 
         validateAndSetFile(field, repeatIndex, file) {
             const key = field.id + '_' + repeatIndex;
-            const maxBytes = (field.file_config?.max_size_mb || 5) * 1024 * 1024;
+            const maxBytes = (field.file_config?.max_size_mb || 10) * 1024 * 1024;
             const accepted = (field.file_config?.accepted_types || ['pdf']).map(t => '.' + t);
             const ext = '.' + file.name.split('.').pop().toLowerCase();
 
@@ -542,7 +565,7 @@ function dynamicForm(sectionsJson) {
                 return;
             }
             if (file.size > maxBytes) {
-                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 5) + ' MB.';
+                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 10) + ' MB.';
                 this.fileNames[key] = null;
                 return;
             }
@@ -624,7 +647,11 @@ function dynamicForm(sectionsJson) {
                             valid = false;
                         }
                     } else if (field.field_type === 'file') {
-                        if (requiredHere && !this.fileNames[key]) {
+                        if (this.fileErrors[key]) {
+                            // A file was selected but failed size/type validation — block advancement.
+                            this.stepErrors[key] = this.fileErrors[key];
+                            valid = false;
+                        } else if (requiredHere && !this.fileNames[key]) {
                             this.stepErrors[key] = 'This file is required.';
                             valid = false;
                         }
@@ -664,16 +691,27 @@ function dynamicForm(sectionsJson) {
             return firstFail;
         },
 
+        saveToSession() {
+            sessionStorage.setItem('ssbc_form', JSON.stringify({
+                answers: this.answers,
+                checkboxAnswers: this.checkboxAnswers,
+                dateParts: this.dateParts,
+                currentStep: this.step,
+            }));
+        },
+
         nextStep() {
             if (!this.validateCurrentStep()) return;
             this.step++;
             this.activeRepeat = 0;
+            this.saveToSession();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
         prevStep() {
             this.step--;
             this.activeRepeat = 0;
+            this.saveToSession();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
@@ -694,6 +732,11 @@ function dynamicForm(sectionsJson) {
             this.submitError = null;
             this.firstErrorStep = null;
             this.submitting = true;
+            // Clear persisted state — on success the user lands on a confirmation
+            // page; on server validation failure the restore logic will re-populate
+            // from the next page load's sessionStorage (which is cleared here and
+            // repopulated by the $watch listeners before redirect lands).
+            sessionStorage.removeItem('ssbc_form');
             // Re-enable if the page is restored from bfcache (back nav).
             window.addEventListener('pageshow', () => { this.submitting = false; }, { once: true });
             event.target.submit();

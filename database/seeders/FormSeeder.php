@@ -114,21 +114,21 @@ class FormSeeder extends Seeder
                 'label_ar' => 'نسخة من الهوية أو جواز السفر',
                 'field_type' => 'file',
                 'is_required' => true,
-                'file_config' => ['accepted_types' => ['pdf', 'jpg', 'jpeg', 'png'], 'max_size_mb' => 5],
+                'file_config' => ['accepted_types' => ['pdf', 'jpg', 'jpeg', 'png'], 'max_size_mb' => 10],
             ],
             [
                 'label_en' => 'Commercial Registry or Trade License',
                 'label_ar' => 'السجل التجاري أو الرخصة التجارية',
                 'field_type' => 'file',
                 'is_required' => true,
-                'file_config' => ['accepted_types' => ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 'max_size_mb' => 5],
+                'file_config' => ['accepted_types' => ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 'max_size_mb' => 10],
             ],
             [
                 'label_en' => 'Company Profile',
                 'label_ar' => 'ملف تعريف الشركة',
                 'field_type' => 'file',
                 'is_required' => false,
-                'file_config' => ['accepted_types' => ['pdf', 'doc', 'docx'], 'max_size_mb' => 5],
+                'file_config' => ['accepted_types' => ['pdf', 'doc', 'docx'], 'max_size_mb' => 10],
             ],
         ];
 

@@ -58,7 +58,28 @@
       "Bash(/c/php-8.5.6/php.exe -l database/migrations/2026_05_21_000003_widen_form_field_label_columns.php)",
       "Bash(/c/php-8.5.6/php.exe -l app/Http/Controllers/Admin/FormBuilderController.php)",
       "Bash(/c/php-8.5.6/php.exe -l lang/en/join.php)",
-      "Bash(/c/php-8.5.6/php.exe -l lang/ar/join.php)"
+      "Bash(/c/php-8.5.6/php.exe -l lang/ar/join.php)",
+      "Bash(git pull *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Select-String -Path \"C:\\\\LevareLabs\\\\sysabc.org\\\\app\\\\Models\\\\SiteSetting.php\" -Pattern \"homeList|pillars|homeContent\")",
+      "Bash(Select-Object -First 30 LineNumber, Line)",
+      "PowerShell(Get-ChildItem C:\\\\LevareLabs\\\\sysabc.org -Directory | Select-Object Name; \"---\"; Get-ChildItem C:\\\\LevareLabs\\\\sysabc.org\\\\app -ErrorAction SilentlyContinue | Select-Object Name; \"---\"; Test-Path C:\\\\LevareLabs\\\\sysabc.org\\\\artisan; Test-Path C:\\\\LevareLabs\\\\sysabc.org\\\\ssbc_app\\\\artisan)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('require-dev',{}\\), indent=2\\)\\)\")",
+      "Bash(where php *)",
+      "Bash(php -v)",
+      "Bash(sc query *)",
+      "Bash(tasklist)",
+      "Bash(C:/tools/php84/php.exe *)",
+      "PowerShell(Get-Service *)",
+      "Bash(git -C /c/LevareLabs/sysabc.org log --all --oneline --name-only)",
+      "Bash(git rm *)",
+      "Bash(gh repo *)",
+      "WebFetch(domain:github.com)",
+      "Bash(claude mcp *)",
+      "Bash(Select-Object Name)",
+      "mcp__ruflo__swarm_init",
+      "mcp__ruflo__hive-mind_init",
+      "mcp__ruflo__hive-mind_spawn"
     ]
   }
 }

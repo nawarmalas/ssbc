@@ -324,7 +324,7 @@ function formBuilder() {
             placeholder_en: '', placeholder_ar: '',
             field_type: 'text', is_required: true, is_active: true,
             options: [], options_source: 'manual',
-            validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 5 },
+            validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 10 },
         },
 
         confirmModal: { open: false, message: '', warning: '', action: () => {} },
@@ -464,14 +464,14 @@ function formBuilder() {
                 options: field.options ? JSON.parse(JSON.stringify(field.options)) : [],
                 options_source: field.options_source || 'manual',
                 validation_rules: field.validation_rules || {},
-                file_config: field.file_config || { accepted_types: ['pdf'], max_size_mb: 5 },
+                file_config: field.file_config || { accepted_types: ['pdf'], max_size_mb: 10 },
             } : {
                 section_id: sectionId,
                 label_en: '', label_ar: '',
                 placeholder_en: '', placeholder_ar: '',
                 field_type: 'text', is_required: true, is_active: true,
                 options: [], options_source: 'manual', validation_rules: {},
-                file_config: { accepted_types: ['pdf'], max_size_mb: 5 },
+                file_config: { accepted_types: ['pdf'], max_size_mb: 10 },
             };
             this.fieldModalOpen = true;
         },
