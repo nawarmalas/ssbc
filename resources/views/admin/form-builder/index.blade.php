@@ -268,7 +268,7 @@
                 <div class="mt-3">
                     <label class="ssbc-label">Max File Size (MB)</label>
                     <input type="number" x-model.number="fieldForm.file_config.max_size_mb"
-                           min="1" max="50" class="ssbc-input w-24">
+                           min="1" max="100" class="ssbc-input w-24">
                 </div>
             </div>
 
@@ -324,7 +324,7 @@ function formBuilder() {
             placeholder_en: '', placeholder_ar: '',
             field_type: 'text', is_required: true, is_active: true,
             options: [], options_source: 'manual',
-            validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 10 },
+            validation_rules: {}, file_config: { accepted_types: ['pdf'], max_size_mb: 100 },
         },
 
         confirmModal: { open: false, message: '', warning: '', action: () => {} },
@@ -464,14 +464,14 @@ function formBuilder() {
                 options: field.options ? JSON.parse(JSON.stringify(field.options)) : [],
                 options_source: field.options_source || 'manual',
                 validation_rules: field.validation_rules || {},
-                file_config: field.file_config || { accepted_types: ['pdf'], max_size_mb: 10 },
+                file_config: field.file_config || { accepted_types: ['pdf'], max_size_mb: 100 },
             } : {
                 section_id: sectionId,
                 label_en: '', label_ar: '',
                 placeholder_en: '', placeholder_ar: '',
                 field_type: 'text', is_required: true, is_active: true,
                 options: [], options_source: 'manual', validation_rules: {},
-                file_config: { accepted_types: ['pdf'], max_size_mb: 10 },
+                file_config: { accepted_types: ['pdf'], max_size_mb: 100 },
             };
             this.fieldModalOpen = true;
         },

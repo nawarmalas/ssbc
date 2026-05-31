@@ -207,7 +207,7 @@ class FormBuilderController extends Controller
             'validation_rules'   => ['nullable', 'array'],
             'file_config'        => ['nullable', 'array'],
             'file_config.accepted_types' => ['nullable', 'array'],
-            'file_config.max_size_mb'    => ['nullable', 'integer', 'min:1', 'max:50'],
+            'file_config.max_size_mb'    => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         foreach (['label_en', 'label_ar', 'placeholder_en', 'placeholder_ar'] as $key) {

@@ -21,12 +21,15 @@ class FormSubmissionService
         $form = FormService::getActiveForm($formId);
 
         $this->normaliseAnswers($request, $form);
-        $request->validate($this->rulesFor($request, $form), [
-            'answers.*.*.regex'          => 'Please enter a phone number with country code, e.g. +966 50 000 0000 or 00966 50 000 0000.',
-            'answers.*.*.before'         => 'You must be at least 18 years old.',
-            'answers.*.*.before_or_equal'=> 'Date cannot be in the future.',
-            'answers.*.*.min'            => 'Please select at least one option.',
-        ]);
+        $request->validate(
+            $this->rulesFor($request, $form),
+            array_merge([
+                'answers.*.*.regex'          => 'Please enter a valid phone number — digits only, optionally starting with + or 00 for international numbers.',
+                'answers.*.*.before'         => 'You must be at least 18 years old.',
+                'answers.*.*.before_or_equal'=> 'Date cannot be in the future.',
+                'answers.*.*.min'            => 'Please select at least one option.',
+            ], $this->numberFieldMessages($form))
+        );
 
         $submission = FormSubmission::create([
             'form_id'      => $formId,
@@ -55,19 +58,88 @@ class FormSubmissionService
 
         foreach ($form as $section) {
             foreach ($section->fields as $field) {
-                if ($field->field_type !== 'tel' || ! isset($answers[$field->id])) {
+                if (! isset($answers[$field->id])) {
                     continue;
                 }
 
-                foreach ($answers[$field->id] as $repeat => $value) {
-                    if (is_string($value) && $value !== '') {
-                        $answers[$field->id][$repeat] = preg_replace('/\s+/', '', $value);
+                // Phone: strip spaces, dashes, parentheses and dots so forgiving,
+                // human-formatted input (e.g. "+963 (11) 222-3333") validates and
+                // stores in a consistent shape.
+                if ($field->field_type === 'tel') {
+                    foreach ($answers[$field->id] as $repeat => $value) {
+                        if (is_string($value) && $value !== '') {
+                            $answers[$field->id][$repeat] = preg_replace('/[\s\-().]+/', '', $value);
+                        }
+                    }
+                    continue;
+                }
+
+                // URL: users rarely type the scheme, so prepend "https://" when it
+                // is missing (e.g. "linkedin.com/in/x" → "https://linkedin.com/in/x")
+                // so the `url` rule passes instead of silently rejecting them.
+                if ($field->field_type === 'url') {
+                    foreach ($answers[$field->id] as $repeat => $value) {
+                        if (is_string($value)) {
+                            $trimmed = trim($value);
+                            if ($trimmed !== '' && ! preg_match('#^https?://#i', $trimmed)) {
+                                $trimmed = 'https://'.ltrim($trimmed, '/');
+                            }
+                            $answers[$field->id][$repeat] = $trimmed;
+                        }
+                    }
+                    continue;
+                }
+
+                // Establishment year: expand a 2-digit entry ("96", "03") to the
+                // intended 4-digit year so users are not silently blocked by the
+                // 1900+ minimum. Mirrors the inline expansion shown in the form.
+                if ($this->isYearField($field)) {
+                    foreach ($answers[$field->id] as $repeat => $value) {
+                        if (is_string($value) || is_int($value)) {
+                            $answers[$field->id][$repeat] = $this->expandTwoDigitYear((string) $value);
+                        }
                     }
                 }
             }
         }
 
         $request->merge(['answers' => $answers]);
+    }
+
+    /**
+     * A "year" field is a number field whose minimum is itself year-shaped
+     * (>= 1000). This deliberately keys off the min rather than the label so
+     * that ordinary counts like "Years of experience" are never expanded.
+     */
+    private function isYearField(FormField $field): bool
+    {
+        if ($field->field_type !== 'number') {
+            return false;
+        }
+
+        $min = $field->validation_rules['min'] ?? null;
+
+        return $min !== null && (int) $min >= 1000;
+    }
+
+    /**
+     * Expand a 1- or 2-digit year to 4 digits.
+     * 00–<current 2-digit year> → 2000s, otherwise → 1900s.
+     * Anything that is not a bare 1–2 digit number is returned unchanged.
+     */
+    private function expandTwoDigitYear(string $value): string
+    {
+        $trimmed = trim($value);
+        if (! preg_match('/^\d{1,2}$/', $trimmed)) {
+            return $value;
+        }
+
+        $twoDigit     = (int) $trimmed;
+        $currentPivot = (int) now()->format('y');
+
+        $century = $twoDigit > $currentPivot ? 1900 : 2000;
+
+        return (string) ($century + $twoDigit);
     }
 
     private function rulesFor(Request $request, Collection $form): array
@@ -77,7 +149,11 @@ class FormSubmissionService
         $answers = (array) $request->input('answers', []);
         $today   = now()->toDateString();
         $dobMax  = now()->subYears(18)->toDateString();
-        $phoneRegex = 'regex:/^(?:\+[1-9]|0[1-9])\d{7,14}$/';
+        // Forgiving phone rule: accept local numbers (no country code) as well as
+        // international ones prefixed with "+" or "00". Formatting characters are
+        // already stripped in normaliseAnswers(); we only reject input that is not
+        // phone-shaped at all (letters, far too short/long).
+        $phoneRegex = 'regex:/^(?:\+|00)?\d{6,15}$/';
 
         foreach ($form as $section) {
             $count = $section->is_repeatable ? max(1, (int) ($repeats[$section->id] ?? 1)) : 1;
@@ -138,6 +214,48 @@ class FormSubmissionService
         }
 
         return $rules;
+    }
+
+    /**
+     * Friendly, field-specific messages for number min/max rules.
+     *
+     * Without these, a number field's "min"/"max" failure falls through to the
+     * wildcard answers.*.*.min message ("Please select at least one option."),
+     * which is meant for checkbox groups and is baffling on a year field. Keying
+     * the message to the exact attribute lets Laravel prefer it over the wildcard.
+     */
+    private function numberFieldMessages(Collection $form): array
+    {
+        $messages = [];
+
+        foreach ($form as $section) {
+            $maxRepeats = $section->is_repeatable ? max(1, (int) $section->max_repeats) : 1;
+
+            foreach ($section->fields as $field) {
+                if ($field->field_type !== 'number') {
+                    continue;
+                }
+
+                $min     = $field->validation_rules['min'] ?? null;
+                $max     = $field->validation_rules['max'] ?? null;
+                $isYear  = $this->isYearField($field);
+
+                for ($repeat = 0; $repeat < $maxRepeats; $repeat++) {
+                    if ($min !== null) {
+                        $messages["answers.{$field->id}.{$repeat}.min"] = $isYear
+                            ? "Please enter a 4-digit year between {$min} and {$max}."
+                            : "Please enter a value of at least {$min}.";
+                    }
+                    if ($max !== null) {
+                        $messages["answers.{$field->id}.{$repeat}.max"] = $isYear
+                            ? "Please enter a 4-digit year between {$min} and {$max}."
+                            : "Please enter a value no greater than {$max}.";
+                    }
+                }
+            }
+        }
+
+        return $messages;
     }
 
     /**

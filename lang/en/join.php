@@ -51,6 +51,7 @@ return [
     'declaration' => 'I certify that the information and documents provided are true and complete to the best of my knowledge, and I authorise the Council to review them for the purpose of considering my membership.',
     'submit' => 'Submit Application',
     'submitting' => 'Submitting…',
+    'uploading' => 'Uploading…',
     'thanks_heading' => 'Application Submitted',
     'thanks_body' => 'Thank you. The Council secretariat has received your application and will be in touch following review.',
     'thanks_body_ar' => 'شكرًا لك. استلمت أمانة المجلس طلبك وسنتواصل معك بعد المراجعة.',

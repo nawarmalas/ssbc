@@ -143,7 +143,8 @@
                                 <div x-show="!section.is_repeatable || activeRepeat === ri - 1"
                                      class="space-y-6">
                                     <template x-for="field in section.fields" :key="field.id">
-                                        <div x-show="fieldIsVisible(field, ri-1)">
+                                        <div x-show="fieldIsVisible(field, ri-1)"
+                                             :id="'field_' + field.id + '_' + (ri-1)">
                                             {{-- Label — hidden for declaration fields, whose paragraph
                                                  text is shown beside the checkbox instead. --}}
                                             <label x-show="field.field_type !== 'declaration'"
@@ -170,7 +171,7 @@
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     @blur="validateField(field, ri-1)"
                                                     class="ssbc-input"
-                                                    :class="['tel','number'].includes(field.field_type) ? 'text-left' : ''"
+                                                    :class="[ ['tel','number'].includes(field.field_type) ? 'text-left' : '', errorClass(field, ri-1) ]"
                                                 >
                                             </template>
 
@@ -184,6 +185,7 @@
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     rows="3"
                                                     class="ssbc-input"
+                                                    :class="errorClass(field, ri-1)"
                                                 ></textarea>
                                             </template>
 
@@ -195,6 +197,7 @@
                                                            :value="dateValue(field, ri-1)">
                                                     <div class="grid grid-cols-3 gap-3">
                                                         <select class="ssbc-input"
+                                                                :class="errorClass(field, ri-1)"
                                                                 x-model="dateParts[dateKey(field, ri-1)].month"
                                                                 @change="validateField(field, ri-1)"
                                                                 :aria-label="'{{ __('join.date.month') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
@@ -204,6 +207,7 @@
                                                             </template>
                                                         </select>
                                                         <select class="ssbc-input"
+                                                                :class="errorClass(field, ri-1)"
                                                                 x-model="dateParts[dateKey(field, ri-1)].day"
                                                                 @change="validateField(field, ri-1)"
                                                                 :aria-label="'{{ __('join.date.day') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
@@ -213,6 +217,7 @@
                                                             </template>
                                                         </select>
                                                         <select class="ssbc-input"
+                                                                :class="errorClass(field, ri-1)"
                                                                 x-model="dateParts[dateKey(field, ri-1)].year"
                                                                 @change="validateField(field, ri-1)"
                                                                 :aria-label="'{{ __('join.date.year') }} — ' + (locale === 'ar' ? field.label_ar : field.label_en)">
@@ -233,6 +238,7 @@
                                                     :required="step === sIdx && field.is_required && ri === 1"
                                                     x-model="answers[field.id + '_' + (ri-1)]"
                                                     class="ssbc-input"
+                                                    :class="errorClass(field, ri-1)"
                                                 >
                                                     <option value="">— Select —</option>
                                                     <template x-for="opt in (field.options || [])" :key="opt.value">
@@ -293,7 +299,7 @@
                                                         <div x-show="!fileNames[field.id + '_' + (ri-1)]">
                                                             <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
                                                             <p class="text-xs text-ssbc-sage/70 mt-1"
-                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 10) + ' MB'"></p>
+                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 100) + ' MB'"></p>
                                                         </div>
                                                         <div x-show="fileNames[field.id + '_' + (ri-1)]"
                                                              class="flex items-center justify-center gap-2">
@@ -329,6 +335,16 @@
                                             <p x-show="stepErrors[field.id + '_' + (ri-1)]"
                                                x-text="stepErrors[field.id + '_' + (ri-1)]"
                                                class="text-red-500 text-xs mt-1"></p>
+
+                                            {{-- Inline confirmation (e.g. resolved year, normalized phone) --}}
+                                            <p x-show="fieldHints[field.id + '_' + (ri-1)]" x-cloak
+                                               x-text="fieldHints[field.id + '_' + (ri-1)]"
+                                               class="text-ssbc-green/80 text-xs mt-1"></p>
+
+                                            {{-- Soft, non-blocking warning (e.g. ambiguous phone) --}}
+                                            <p x-show="fieldWarnings[field.id + '_' + (ri-1)]" x-cloak
+                                               x-text="fieldWarnings[field.id + '_' + (ri-1)]"
+                                               class="text-amber-600 text-xs mt-1"></p>
                                         </div>
                                     </template>
                                 </div>
@@ -359,6 +375,18 @@
                         </button>
                         @endif
                     </div>
+
+                    {{-- Upload progress — shown while large attachments are sending --}}
+                    <div x-show="submitting && uploadProgress > 0 && uploadProgress < 100" x-cloak class="mt-6">
+                        <div class="flex justify-between text-xs text-ssbc-sage mb-1">
+                            <span>{{ __('join.uploading') }}</span>
+                            <span x-text="uploadProgress + '%'"></span>
+                        </div>
+                        <div class="h-1.5 w-full bg-ssbc-green/10 overflow-hidden rounded">
+                            <div class="h-full bg-ssbc-gold transition-all duration-150"
+                                 :style="'width: ' + uploadProgress + '%'"></div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -370,8 +398,6 @@ function dynamicForm(sectionsJson) {
     const sections = sectionsJson;
     const locale = document.documentElement.lang || 'en';
 
-    // International phone: +<digits, 8-15> or 00<digits, 8-15>
-    const phoneRegex = /^(?:\+[1-9]|00[1-9])\d{7,14}$/;
     // Loose URL pattern — must start with http(s):// and have a host
     const urlRegex = /^https?:\/\/[^\s.]+\.[^\s]+$/i;
 
@@ -387,9 +413,12 @@ function dynamicForm(sectionsJson) {
         fileNames: {},
         fileErrors: {},
         stepErrors: {},
+        fieldHints: {},      // neutral, informational notes (resolved year, phone preview)
+        fieldWarnings: {},   // soft, non-blocking warnings (ambiguous phone, etc.)
         submitting: false,
         submitError: null,
         firstErrorStep: null,
+        uploadProgress: 0,   // 0–100 while a submission (incl. file uploads) is in flight
         codeToId: {},
         months: @json($dateMonthOptions),
 
@@ -555,7 +584,7 @@ function dynamicForm(sectionsJson) {
 
         validateAndSetFile(field, repeatIndex, file) {
             const key = field.id + '_' + repeatIndex;
-            const maxBytes = (field.file_config?.max_size_mb || 10) * 1024 * 1024;
+            const maxBytes = (field.file_config?.max_size_mb || 100) * 1024 * 1024;
             const accepted = (field.file_config?.accepted_types || ['pdf']).map(t => '.' + t);
             const ext = '.' + file.name.split('.').pop().toLowerCase();
 
@@ -565,7 +594,7 @@ function dynamicForm(sectionsJson) {
                 return;
             }
             if (file.size > maxBytes) {
-                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 10) + ' MB.';
+                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 100) + ' MB.';
                 this.fileNames[key] = null;
                 return;
             }
@@ -573,9 +602,140 @@ function dynamicForm(sectionsJson) {
             this.fileNames[key] = file.name;
         },
 
+        // A "year" field is a number whose minimum is itself year-shaped (>= 1000).
+        // Keyed off min (not the label) so plain counts are never expanded.
+        isYearField(field) {
+            if (field.field_type !== 'number') return false;
+            const min = field.validation_rules?.min;
+            return min != null && Number(min) >= 1000;
+        },
+
+        // "96" -> "1996", "03" -> "2003": years above the current 2-digit year map
+        // to the 1900s, the rest to the 2000s.
+        expandTwoDigitYear(raw) {
+            const n = parseInt(raw, 10);
+            const pivot = new Date().getFullYear() % 100;
+            return String((n > pivot ? 1900 : 2000) + n);
+        },
+
+        // On blur of a year field, expand a 1–2 digit entry and confirm it inline.
+        applyYearExpansion(field, repeatIndex) {
+            const key = field.id + '_' + repeatIndex;
+            const raw = (this.answers[key] ?? '').toString().trim();
+            if (/^\d{1,2}$/.test(raw)) {
+                const expanded = this.expandTwoDigitYear(raw);
+                this.answers[key] = expanded;
+                this.fieldHints[key] = 'We read “' + raw + '” as ' + expanded + ' — edit if that’s not right.';
+            } else {
+                delete this.fieldHints[key];
+            }
+        },
+
+        cleanPhone(value) {
+            return String(value).replace(/[\s\-().]+/g, '');
+        },
+
+        // Readable preview for an international number, or null for a local one.
+        prettyPhone(cleaned) {
+            let s = cleaned;
+            if (s.startsWith('00')) s = '+' + s.slice(2);
+            if (!s.startsWith('+')) return null;
+            const digits = s.slice(1).replace(/\D/g, '');
+            if (!digits) return null;
+            return '+' + (digits.match(/.{1,3}/g) || [digits]).join(' ');
+        },
+
+        // Phone is never blocked on the client — we only inform (preview) and gently
+        // warn (ambiguous/local). Strips formatting before inspecting the value.
+        applyPhoneHints(field, repeatIndex) {
+            const key = field.id + '_' + repeatIndex;
+            const raw = this.answers[key];
+            if (!raw) { delete this.fieldHints[key]; delete this.fieldWarnings[key]; return; }
+
+            const cleaned = this.cleanPhone(raw);
+
+            // Contains something other than digits / leading + / 00 — nudge, don't block.
+            if (!/^(?:\+|00)?\d+$/.test(cleaned)) {
+                delete this.fieldHints[key];
+                this.fieldWarnings[key] = 'This doesn’t look like a phone number — please double-check.';
+                return;
+            }
+
+            const digitCount = (cleaned.match(/\d/g) || []).length;
+
+            if (cleaned.startsWith('+') || cleaned.startsWith('00')) {
+                const pretty = this.prettyPhone(cleaned);
+                if (pretty) { this.fieldHints[key] = 'Will be sent as: ' + pretty; }
+                else { delete this.fieldHints[key]; }
+                if (digitCount < 8 || digitCount > 15) {
+                    this.fieldWarnings[key] = 'That number looks unusually ' + (digitCount < 8 ? 'short' : 'long') + ' — please double-check.';
+                } else {
+                    delete this.fieldWarnings[key];
+                }
+            } else {
+                // Local number — accepted as entered; just let the user know.
+                delete this.fieldHints[key];
+                this.fieldWarnings[key] = 'No country code detected — we’ll send this as a local number. Add + and your country code for an international number.';
+            }
+        },
+
+        // Be forgiving about a missing scheme on URL fields: prepend https:// so a
+        // user can type "linkedin.com/in/x" and confirm the saved address inline.
+        applyUrlNormalization(field, repeatIndex) {
+            const key = field.id + '_' + repeatIndex;
+            let val = (this.answers[key] ?? '').toString().trim();
+            if (!val) { delete this.fieldHints[key]; return; }
+            if (!/^https?:\/\//i.test(val)) {
+                val = 'https://' + val.replace(/^\/+/, '');
+                this.answers[key] = val;
+                this.fieldHints[key] = 'Will be saved as: ' + val;
+            } else {
+                this.answers[key] = val; // trims surrounding whitespace
+                delete this.fieldHints[key];
+            }
+        },
+
+        // Red border for a field that currently has an inline error.
+        errorClass(field, repeatIndex) {
+            return this.stepErrors[field.id + '_' + repeatIndex]
+                ? 'border-red-400 focus:border-red-400'
+                : '';
+        },
+
+        // Scroll the first errored field into view (and focus it). Used when a step
+        // or the final submit is blocked, so the user is never left wondering why.
+        scrollToFirstError() {
+            let target = null, topMost = Infinity;
+            for (const key of Object.keys(this.stepErrors)) {
+                const el = document.getElementById('field_' + key);
+                if (!el) continue;
+                const rect = el.getBoundingClientRect();
+                if (rect.height === 0) continue; // hidden (e.g. inactive repeat/step)
+                const absTop = rect.top + window.scrollY;
+                if (absTop < topMost) { topMost = absTop; target = el; }
+            }
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const input = target.querySelector('input:not([type=hidden]), textarea, select');
+                if (input) input.focus({ preventScroll: true });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+
         // Inline format check for one field — runs on blur. Sets stepErrors[key].
         validateField(field, repeatIndex) {
             const key = field.id + '_' + repeatIndex;
+
+            // Forgiving, non-blocking passes: expand 2-digit years; preview/soft-warn
+            // phones; auto-prepend https:// on URLs.
+            if (this.isYearField(field)) this.applyYearExpansion(field, repeatIndex);
+            if (field.field_type === 'tel') {
+                this.applyPhoneHints(field, repeatIndex);
+                delete this.stepErrors[key]; // phone format must never block the user
+            }
+            if (field.field_type === 'url') this.applyUrlNormalization(field, repeatIndex);
+
             const val = field.field_type === 'date' ? this.dateValue(field, repeatIndex) : this.answers[key];
             if (!val) { delete this.stepErrors[key]; return true; }
 
@@ -585,15 +745,9 @@ function dynamicForm(sectionsJson) {
                     return false;
                 }
             }
-            if (field.field_type === 'tel') {
-                if (!phoneRegex.test(String(val).replace(/\s/g, ''))) {
-                    this.stepErrors[key] = 'Include country code, e.g. +966 50 000 0000 or 00966 50 000 0000';
-                    return false;
-                }
-            }
             if (field.field_type === 'url') {
                 if (!urlRegex.test(val)) {
-                    this.stepErrors[key] = 'Please enter a full URL (https://example.com).';
+                    this.stepErrors[key] = 'Please enter a valid web address, e.g. linkedin.com/in/your-name.';
                     return false;
                 }
             }
@@ -701,7 +855,11 @@ function dynamicForm(sectionsJson) {
         },
 
         nextStep() {
-            if (!this.validateCurrentStep()) return;
+            if (!this.validateCurrentStep()) {
+                // Don't silently do nothing — take the user to the first problem.
+                this.$nextTick(() => this.scrollToFirstError());
+                return;
+            }
             this.step++;
             this.activeRepeat = 0;
             this.saveToSession();
@@ -715,8 +873,98 @@ function dynamicForm(sectionsJson) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
-        onSubmit(event) {
+        // Index of the section that contains a given field id, or -1.
+        sectionIndexForField(fieldId) {
+            for (let i = 0; i < this.sections.length; i++) {
+                if ((this.sections[i].fields || []).some(f => f.id === fieldId)) return i;
+            }
+            return -1;
+        },
+
+        // Map a Laravel 422 error bag (keys like "answers.12.0" / "files.12.0")
+        // onto inline field errors and jump to the first failing step. Any error
+        // that can't be tied to a field is surfaced in the summary so nothing is
+        // silently dropped.
+        applyServerErrors(errors, fallbackMessage) {
+            this.stepErrors = {};
+            let firstStep = null;
+            const unmapped = [];
+            for (const [key, messages] of Object.entries(errors || {})) {
+                const msg = Array.isArray(messages) ? messages[0] : String(messages);
+                const m = key.match(/^(?:answers|files)\.(\d+)\.(\d+)/);
+                if (!m) { unmapped.push(msg); continue; }
+                const fieldId = Number(m[1]);
+                this.stepErrors[m[1] + '_' + m[2]] = msg;
+                const sIdx = this.sectionIndexForField(fieldId);
+                if (sIdx !== -1 && (firstStep === null || sIdx < firstStep)) firstStep = sIdx;
+            }
+            if (firstStep !== null) {
+                this.firstErrorStep = firstStep;
+                this.step = firstStep;
+                this.activeRepeat = 0;
+            }
+            this.submitError = unmapped.length
+                ? unmapped.join(' ')
+                : (firstStep !== null
+                    ? 'Please review the highlighted fields and try again.'
+                    : (fallbackMessage || 'Your submission could not be processed. Please review your answers and try again.'));
+            this.$nextTick(() => this.scrollToFirstError());
+        },
+
+        // Fetch a fresh CSRF token (for sessions that expired while the form was
+        // open) by re-requesting this page and reading its <meta> token. Returns
+        // true and patches the form's _token on success.
+        async refreshCsrf(form) {
+            try {
+                const res = await fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    cache: 'no-store',
+                });
+                if (!res.ok) return false;
+                const html = await res.text();
+                const match = html.match(/name="csrf-token"\s+content="([^"]+)"/);
+                const token = match ? match[1] : null;
+                if (!token) return false;
+                const input = form.querySelector('input[name="_token"]');
+                if (input) input.value = token;
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        // POST the form via XHR so we get upload progress and can keep a generous
+        // ceiling for large (up to 100 MB) attachments without aborting them.
+        // Resolves with { status, url, body }; rejects with 'network'/'timeout'.
+        postForm(form, action) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', action, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('Accept', 'application/json');
+                // High ceiling so a real 100 MB upload on a slow link is not killed
+                // mid-transfer; only a truly stalled server hits this.
+                xhr.timeout = 600000; // 10 minutes
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                    }
+                };
+                xhr.onload = () => resolve({ status: xhr.status, url: xhr.responseURL, body: xhr.responseText });
+                xhr.onerror = () => reject(new Error('network'));
+                xhr.ontimeout = () => reject(new Error('timeout'));
+                xhr.onabort = () => reject(new Error('abort'));
+                xhr.send(new FormData(form));
+            });
+        },
+
+        async onSubmit(event) {
             if (this.submitting) return;
+            const form = event.target;
+
+            // Preview mode (action="#") can't be submitted.
+            const action = form.getAttribute('action');
+            if (!action || action === '#') return;
 
             const failingStep = this.validateAllSections();
             if (failingStep !== -1) {
@@ -724,22 +972,75 @@ function dynamicForm(sectionsJson) {
                 this.submitError = 'Please complete all required fields before submitting.';
                 this.step = failingStep;
                 this.activeRepeat = 0;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                this.$nextTick(() => this.scrollToFirstError());
                 return;
             }
 
-            // All client-side checks passed — release to native submit.
             this.submitError = null;
             this.firstErrorStep = null;
+            this.uploadProgress = 0;
             this.submitting = true;
-            // Clear persisted state — on success the user lands on a confirmation
-            // page; on server validation failure the restore logic will re-populate
-            // from the next page load's sessionStorage (which is cleared here and
-            // repopulated by the $watch listeners before redirect lands).
-            sessionStorage.removeItem('ssbc_form');
             // Re-enable if the page is restored from bfcache (back nav).
             window.addEventListener('pageshow', () => { this.submitting = false; }, { once: true });
-            event.target.submit();
+
+            try {
+                let res = await this.postForm(form, action);
+
+                // Session/CSRF expired while the form sat open: fetch a fresh token
+                // and retry the submission once.
+                if (res.status === 419 && await this.refreshCsrf(form)) {
+                    this.uploadProgress = 0;
+                    res = await this.postForm(form, action);
+                }
+
+                // Success: the controller 302-redirects to the thank-you page and
+                // XHR transparently follows it, so we land on a 200 at that URL.
+                if (res.status === 200) {
+                    sessionStorage.removeItem('ssbc_form');
+                    window.location.assign(res.url || window.location.href);
+                    return;
+                }
+
+                // Validation errors — surface them inline against each field.
+                if (res.status === 422) {
+                    let data = {};
+                    try { data = JSON.parse(res.body); } catch (e) {}
+                    this.applyServerErrors(data.errors, data.message);
+                    this.submitting = false;
+                    return;
+                }
+
+                // Attachment(s) too large for the server to accept.
+                if (res.status === 413) {
+                    this.submitError = 'Your attached file is too large to upload. Please attach a smaller file (up to 100 MB) and try again.';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    this.submitting = false;
+                    return;
+                }
+
+                // Still 419 after a token refresh — most often an attachment larger
+                // than the server accepts (PHP discards the whole request, token and
+                // all), or a session that is fully gone.
+                if (res.status === 419) {
+                    this.submitError = 'We couldn’t verify your session. This usually means an attached file is too large, or the form was open too long. Your answers are saved — please check any attachments, reload the page, and submit again.';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    this.submitting = false;
+                    return;
+                }
+
+                // Anything else (0 = blocked/offline, 500, 503, …) — show it, keep answers.
+                this.submitError = res.status
+                    ? 'Something went wrong on our side (error ' + res.status + '). Your answers are saved — please try again in a moment.'
+                    : 'We couldn’t reach the server. Your answers are saved — please check your connection and try again.';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                this.submitting = false;
+            } catch (e) {
+                this.submitError = e.message === 'timeout'
+                    ? 'The upload timed out — your connection may be slow or the file very large. Your answers are saved; please try again.'
+                    : 'We couldn’t reach the server. Your answers are saved — please check your connection and try again.';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                this.submitting = false;
+            }
         },
     };
 }

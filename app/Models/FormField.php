@@ -43,7 +43,7 @@ class FormField extends Model
 
     public function maxFileSizeKb(): int
     {
-        $mb = $this->file_config['max_size_mb'] ?? 10;
+        $mb = $this->file_config['max_size_mb'] ?? 100;
         return $mb * 1024;
     }
 
