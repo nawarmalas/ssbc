@@ -48,7 +48,7 @@
 
             @if(isset($preview) && $preview)
                 <div class="mb-8 bg-amber-50 border border-amber-300 px-4 py-3 text-sm text-amber-800 text-center">
-                    Preview Mode — this form cannot be submitted from here.
+                    {{ __('join.js.preview_mode') }}
                 </div>
             @endif
 
@@ -92,7 +92,9 @@
                 <form method="POST"
                       action="{{ isset($preview) && $preview ? '#' : $submitAction }}"
                       enctype="multipart/form-data"
-                      @submit.prevent="onSubmit">
+                      novalidate
+                      @submit.prevent="onSubmit"
+                      @keydown.enter="onEnterKey($event)">
                     @csrf
 
                     {{-- Hidden _repeats fields --}}
@@ -125,13 +127,13 @@
                                                 x-show="(repeats[section.id] || 1) < section.max_repeats"
                                                 @click="addRepeat(section)"
                                                 class="px-4 py-1.5 rounded-full text-sm border border-dashed border-ssbc-gold text-ssbc-gold">
-                                            + Add another
+                                            {{ __('join.js.add_another') }}
                                         </button>
                                         <button type="button"
                                                 x-show="(repeats[section.id] || 1) > 1"
                                                 @click="removeLastRepeat(section)"
                                                 class="px-4 py-1.5 rounded-full text-sm border border-red-200 text-red-600 hover:bg-red-50">
-                                            Remove latest
+                                            {{ __('join.js.remove_latest') }}
                                         </button>
                                     </div>
                                 </div>
@@ -239,7 +241,7 @@
                                                     class="ssbc-input"
                                                     :class="errorClass(field, ri-1)"
                                                 >
-                                                    <option value="">— Select —</option>
+                                                    <option value="">{{ __('join.js.select_placeholder') }}</option>
                                                     <template x-for="opt in (field.options || [])" :key="opt.value">
                                                         <option :value="opt.value"
                                                                 x-text="locale === 'ar' ? opt.label_ar : opt.label_en"></option>
@@ -296,9 +298,9 @@
                                                                @change="handleFileSelect(field, ri-1, $event)"
                                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                                                         <div x-show="!fileNames[field.id + '_' + (ri-1)]">
-                                                            <p class="text-sm text-ssbc-sage">Drag & drop or click to browse</p>
+                                                            <p class="text-sm text-ssbc-sage">{{ __('join.js.file_drop') }}</p>
                                                             <p class="text-xs text-ssbc-sage/70 mt-1"
-                                                               x-text="'.' + (field.file_config?.accepted_types || ['pdf']).join(', .') + ' — max ' + (field.file_config?.max_size_mb || 100) + ' MB'"></p>
+                                                               x-text="t('file_hint', { types: '.' + (field.file_config?.accepted_types || ['pdf']).join(', .'), mb: (field.file_config?.max_size_mb || 100) })"></p>
                                                         </div>
                                                         <div x-show="fileNames[field.id + '_' + (ri-1)]"
                                                              class="flex items-center justify-center gap-2">
@@ -865,6 +867,19 @@ function dynamicForm(sectionsJson) {
             this.activeRepeat = 0;
             this.saveToSession();
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        // Enter advances like the "Next" button on intermediate steps and submits on
+        // the last one — so a keyboard user never hits a native (English) popup or an
+        // unexpected whole-form submit. Textareas keep Enter for new lines.
+        onEnterKey(e) {
+            if ((e.target.tagName || '').toLowerCase() === 'textarea') return;
+            e.preventDefault();
+            if (this.step < this.sections.length - 1) {
+                this.nextStep();
+            } else {
+                this.onSubmit({ target: e.target.closest('form') });
+            }
         },
 
         // Index of the section that contains a given field id, or -1.

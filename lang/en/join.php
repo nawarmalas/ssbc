@@ -97,5 +97,12 @@ return [
         'year_range'     => 'Please enter a 4-digit year between :min and :max.',
         'number_min'     => 'Please enter a value of at least :min.',
         'number_max'     => 'Please enter a value no greater than :max.',
+        // Form UI labels
+        'preview_mode'       => 'Preview Mode — this form cannot be submitted from here.',
+        'add_another'        => '+ Add another',
+        'remove_latest'      => 'Remove latest',
+        'file_drop'          => 'Drag & drop or click to browse',
+        'file_hint'          => ':types — max :mb MB',
+        'select_placeholder' => '— Select —',
     ],
 ];
