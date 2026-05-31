@@ -56,4 +56,46 @@ return [
     'thanks_body' => 'Thank you. The Council secretariat has received your application and will be in touch following review.',
     'thanks_body_ar' => 'شكرًا لك. استلمت أمانة المجلس طلبك وسنتواصل معك بعد المراجعة.',
     'return_home' => 'Return to Home',
+
+    // Strings used by the interactive form (inline validation, hints, warnings,
+    // submission errors). Placeholders like :min are substituted client-side.
+    'js' => [
+        // Field validation
+        'required'       => 'This field is required.',
+        'email'          => 'Please enter a valid email address.',
+        'url'            => 'Please enter a valid web address, e.g. linkedin.com/in/your-name.',
+        'number'         => 'Please enter a number.',
+        'min'            => 'Value must be at least :min.',
+        'max'            => 'Value must be at most :max.',
+        'dob'            => 'You must be at least 18 years old.',
+        'future_date'    => 'Date cannot be in the future.',
+        'select_one'     => 'Please select at least one option.',
+        'file_required'  => 'This file is required.',
+        'declaration'    => 'You must accept the declaration to submit.',
+        'file_type'      => 'File type not accepted. Allowed: :types',
+        'file_size'      => 'File too large. Max :mb MB.',
+        // Inline hints & soft warnings
+        'year_expanded'  => 'We read “:input” as :year — edit if that’s not right.',
+        'phone_preview'  => 'Will be sent as: :number',
+        'phone_invalid'  => 'This doesn’t look like a phone number — please double-check.',
+        'phone_short'    => 'That number looks unusually short — please double-check.',
+        'phone_long'     => 'That number looks unusually long — please double-check.',
+        'phone_local'    => 'No country code detected — we’ll send this as a local number. Add + and your country code for an international number.',
+        // Submission-level
+        'complete_required'    => 'Please complete all required fields before submitting.',
+        'review_highlighted'   => 'Please review the highlighted fields and try again.',
+        'generic_submit'       => 'Your submission could not be processed. Please review your answers and try again.',
+        'returning_to_step'    => 'Returning to step :step — please fill the highlighted fields.',
+        'file_too_large_server'=> 'Your attached file is too large to upload. Please attach a smaller file (up to 100 MB) and try again.',
+        'session'              => 'We couldn’t verify your session. This usually means an attached file is too large, or the form was open too long. Your answers are saved — please check any attachments, reload the page, and submit again.',
+        'server'               => 'Something went wrong on our side (error :status). Your answers are saved — please try again in a moment.',
+        'network'              => 'We couldn’t reach the server. Your answers are saved — please check your connection and try again.',
+        'timeout'              => 'The upload timed out — your connection may be slow or the file very large. Your answers are saved; please try again.',
+        'fix_errors_heading'   => 'Please correct the following errors:',
+        // Server-side validation (shown via 422; rendered with the request locale)
+        'phone_server'   => 'Please enter a valid phone number — digits only, optionally starting with + or 00 for international numbers.',
+        'year_range'     => 'Please enter a 4-digit year between :min and :max.',
+        'number_min'     => 'Please enter a value of at least :min.',
+        'number_max'     => 'Please enter a value no greater than :max.',
+    ],
 ];

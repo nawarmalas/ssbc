@@ -54,7 +54,7 @@
 
             @if ($errors->any())
                 <div class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800" id="server-errors">
-                    <p class="font-semibold mb-2">Please correct the following errors:</p>
+                    <p class="font-semibold mb-2">{{ __('join.js.fix_errors_heading') }}</p>
                     <ul class="list-disc list-inside space-y-1">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -69,9 +69,8 @@
                 <div x-show="submitError" x-cloak
                      class="mb-8 border border-red-300 bg-red-50 p-4 text-sm text-red-800">
                     <p class="font-semibold mb-2" x-text="submitError"></p>
-                    <p x-show="firstErrorStep !== null">
-                        Returning to step <span x-text="firstErrorStep + 1"></span> — please fill the highlighted fields.
-                    </p>
+                    <p x-show="firstErrorStep !== null"
+                       x-text="t('returning_to_step', { step: firstErrorStep + 1 })"></p>
                 </div>
 
                 {{-- Step indicator --}}
@@ -401,6 +400,9 @@ function dynamicForm(sectionsJson) {
     // Loose URL pattern — must start with http(s):// and have a host
     const urlRegex = /^https?:\/\/[^\s.]+\.[^\s]+$/i;
 
+    // Localised UI strings (already in the active locale; :placeholders filled by t()).
+    const messages = @json(__('join.js'));
+
     return {
         sections,
         locale,
@@ -421,6 +423,13 @@ function dynamicForm(sectionsJson) {
         uploadProgress: 0,   // 0–100 while a submission (incl. file uploads) is in flight
         codeToId: {},
         months: @json($dateMonthOptions),
+
+        // Localised string lookup with :placeholder substitution.
+        t(key, repl = {}) {
+            let s = messages[key] ?? key;
+            for (const k in repl) s = s.replaceAll(':' + k, repl[k]);
+            return s;
+        },
 
         init() {
             sections.forEach(s => {
@@ -589,12 +598,12 @@ function dynamicForm(sectionsJson) {
             const ext = '.' + file.name.split('.').pop().toLowerCase();
 
             if (!accepted.includes(ext)) {
-                this.fileErrors[key] = 'File type not accepted. Allowed: ' + accepted.join(', ');
+                this.fileErrors[key] = this.t('file_type', { types: accepted.join(', ') });
                 this.fileNames[key] = null;
                 return;
             }
             if (file.size > maxBytes) {
-                this.fileErrors[key] = 'File too large. Max ' + (field.file_config?.max_size_mb || 100) + ' MB.';
+                this.fileErrors[key] = this.t('file_size', { mb: (field.file_config?.max_size_mb || 100) });
                 this.fileNames[key] = null;
                 return;
             }
@@ -625,7 +634,7 @@ function dynamicForm(sectionsJson) {
             if (/^\d{1,2}$/.test(raw)) {
                 const expanded = this.expandTwoDigitYear(raw);
                 this.answers[key] = expanded;
-                this.fieldHints[key] = 'We read “' + raw + '” as ' + expanded + ' — edit if that’s not right.';
+                this.fieldHints[key] = this.t('year_expanded', { input: raw, year: expanded });
             } else {
                 delete this.fieldHints[key];
             }
@@ -657,7 +666,7 @@ function dynamicForm(sectionsJson) {
             // Contains something other than digits / leading + / 00 — nudge, don't block.
             if (!/^(?:\+|00)?\d+$/.test(cleaned)) {
                 delete this.fieldHints[key];
-                this.fieldWarnings[key] = 'This doesn’t look like a phone number — please double-check.';
+                this.fieldWarnings[key] = this.t('phone_invalid');
                 return;
             }
 
@@ -665,33 +674,17 @@ function dynamicForm(sectionsJson) {
 
             if (cleaned.startsWith('+') || cleaned.startsWith('00')) {
                 const pretty = this.prettyPhone(cleaned);
-                if (pretty) { this.fieldHints[key] = 'Will be sent as: ' + pretty; }
+                if (pretty) { this.fieldHints[key] = this.t('phone_preview', { number: pretty }); }
                 else { delete this.fieldHints[key]; }
                 if (digitCount < 8 || digitCount > 15) {
-                    this.fieldWarnings[key] = 'That number looks unusually ' + (digitCount < 8 ? 'short' : 'long') + ' — please double-check.';
+                    this.fieldWarnings[key] = this.t(digitCount < 8 ? 'phone_short' : 'phone_long');
                 } else {
                     delete this.fieldWarnings[key];
                 }
             } else {
                 // Local number — accepted as entered; just let the user know.
                 delete this.fieldHints[key];
-                this.fieldWarnings[key] = 'No country code detected — we’ll send this as a local number. Add + and your country code for an international number.';
-            }
-        },
-
-        // Be forgiving about a missing scheme on URL fields: prepend https:// so a
-        // user can type "linkedin.com/in/x" and confirm the saved address inline.
-        applyUrlNormalization(field, repeatIndex) {
-            const key = field.id + '_' + repeatIndex;
-            let val = (this.answers[key] ?? '').toString().trim();
-            if (!val) { delete this.fieldHints[key]; return; }
-            if (!/^https?:\/\//i.test(val)) {
-                val = 'https://' + val.replace(/^\/+/, '');
-                this.answers[key] = val;
-                this.fieldHints[key] = 'Will be saved as: ' + val;
-            } else {
-                this.answers[key] = val; // trims surrounding whitespace
-                delete this.fieldHints[key];
+                this.fieldWarnings[key] = this.t('phone_local');
             }
         },
 
@@ -727,27 +720,28 @@ function dynamicForm(sectionsJson) {
         validateField(field, repeatIndex) {
             const key = field.id + '_' + repeatIndex;
 
-            // Forgiving, non-blocking passes: expand 2-digit years; preview/soft-warn
-            // phones; auto-prepend https:// on URLs.
+            // Forgiving, non-blocking passes: expand 2-digit years; preview/soft-warn phones.
             if (this.isYearField(field)) this.applyYearExpansion(field, repeatIndex);
             if (field.field_type === 'tel') {
                 this.applyPhoneHints(field, repeatIndex);
                 delete this.stepErrors[key]; // phone format must never block the user
             }
-            if (field.field_type === 'url') this.applyUrlNormalization(field, repeatIndex);
 
             const val = field.field_type === 'date' ? this.dateValue(field, repeatIndex) : this.answers[key];
             if (!val) { delete this.stepErrors[key]; return true; }
 
             if (field.field_type === 'email') {
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                    this.stepErrors[key] = 'Please enter a valid email address.';
+                    this.stepErrors[key] = this.t('email');
                     return false;
                 }
             }
             if (field.field_type === 'url') {
-                if (!urlRegex.test(val)) {
-                    this.stepErrors[key] = 'Please enter a valid web address, e.g. linkedin.com/in/your-name.';
+                // Forgiving: a missing scheme is fine — validate a normalised copy
+                // (the server prepends https:// on save), without altering the input.
+                const normalized = /^https?:\/\//i.test(val) ? val : 'https://' + val.replace(/^\/+/, '');
+                if (!urlRegex.test(normalized)) {
+                    this.stepErrors[key] = this.t('url');
                     return false;
                 }
             }
@@ -756,15 +750,15 @@ function dynamicForm(sectionsJson) {
                 const min = field.validation_rules?.min;
                 const max = field.validation_rules?.max;
                 if (Number.isNaN(n)) {
-                    this.stepErrors[key] = 'Please enter a number.';
+                    this.stepErrors[key] = this.t('number');
                     return false;
                 }
                 if (min != null && n < min) {
-                    this.stepErrors[key] = 'Value must be at least ' + min + '.';
+                    this.stepErrors[key] = this.t('min', { min });
                     return false;
                 }
                 if (max != null && n > max) {
-                    this.stepErrors[key] = 'Value must be at most ' + max + '.';
+                    this.stepErrors[key] = this.t('max', { max });
                     return false;
                 }
             }
@@ -773,8 +767,8 @@ function dynamicForm(sectionsJson) {
                 if (val > max) {
                     const label = (field.label_en || '').toLowerCase();
                     this.stepErrors[key] = label.includes('birth')
-                        ? 'You must be at least 18 years old.'
-                        : 'Date cannot be in the future.';
+                        ? this.t('dob')
+                        : this.t('future_date');
                     return false;
                 }
             }
@@ -797,7 +791,7 @@ function dynamicForm(sectionsJson) {
 
                     if (field.field_type === 'checkbox_group') {
                         if (requiredHere && !(this.checkboxAnswers[key]?.length)) {
-                            this.stepErrors[key] = 'Please select at least one option.';
+                            this.stepErrors[key] = this.t('select_one');
                             valid = false;
                         }
                     } else if (field.field_type === 'file') {
@@ -806,18 +800,18 @@ function dynamicForm(sectionsJson) {
                             this.stepErrors[key] = this.fileErrors[key];
                             valid = false;
                         } else if (requiredHere && !this.fileNames[key]) {
-                            this.stepErrors[key] = 'This file is required.';
+                            this.stepErrors[key] = this.t('file_required');
                             valid = false;
                         }
                     } else if (field.field_type === 'declaration') {
                         if (requiredHere && !this.answers[key]) {
-                            this.stepErrors[key] = 'You must accept the declaration to submit.';
+                            this.stepErrors[key] = this.t('declaration');
                             valid = false;
                         }
                     } else {
                         const val = field.field_type === 'date' ? this.dateValue(field, r) : this.answers[key];
                         if (requiredHere && (val === undefined || val === null || val === '')) {
-                            this.stepErrors[key] = 'This field is required.';
+                            this.stepErrors[key] = this.t('required');
                             valid = false;
                         } else if (val) {
                             // Format check
@@ -906,8 +900,8 @@ function dynamicForm(sectionsJson) {
             this.submitError = unmapped.length
                 ? unmapped.join(' ')
                 : (firstStep !== null
-                    ? 'Please review the highlighted fields and try again.'
-                    : (fallbackMessage || 'Your submission could not be processed. Please review your answers and try again.'));
+                    ? this.t('review_highlighted')
+                    : (fallbackMessage || this.t('generic_submit')));
             this.$nextTick(() => this.scrollToFirstError());
         },
 
@@ -969,7 +963,7 @@ function dynamicForm(sectionsJson) {
             const failingStep = this.validateAllSections();
             if (failingStep !== -1) {
                 this.firstErrorStep = failingStep;
-                this.submitError = 'Please complete all required fields before submitting.';
+                this.submitError = this.t('complete_required');
                 this.step = failingStep;
                 this.activeRepeat = 0;
                 this.$nextTick(() => this.scrollToFirstError());
@@ -1012,7 +1006,7 @@ function dynamicForm(sectionsJson) {
 
                 // Attachment(s) too large for the server to accept.
                 if (res.status === 413) {
-                    this.submitError = 'Your attached file is too large to upload. Please attach a smaller file (up to 100 MB) and try again.';
+                    this.submitError = this.t('file_too_large_server');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     this.submitting = false;
                     return;
@@ -1022,7 +1016,7 @@ function dynamicForm(sectionsJson) {
                 // than the server accepts (PHP discards the whole request, token and
                 // all), or a session that is fully gone.
                 if (res.status === 419) {
-                    this.submitError = 'We couldn’t verify your session. This usually means an attached file is too large, or the form was open too long. Your answers are saved — please check any attachments, reload the page, and submit again.';
+                    this.submitError = this.t('session');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     this.submitting = false;
                     return;
@@ -1030,14 +1024,12 @@ function dynamicForm(sectionsJson) {
 
                 // Anything else (0 = blocked/offline, 500, 503, …) — show it, keep answers.
                 this.submitError = res.status
-                    ? 'Something went wrong on our side (error ' + res.status + '). Your answers are saved — please try again in a moment.'
-                    : 'We couldn’t reach the server. Your answers are saved — please check your connection and try again.';
+                    ? this.t('server', { status: res.status })
+                    : this.t('network');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 this.submitting = false;
             } catch (e) {
-                this.submitError = e.message === 'timeout'
-                    ? 'The upload timed out — your connection may be slow or the file very large. Your answers are saved; please try again.'
-                    : 'We couldn’t reach the server. Your answers are saved — please check your connection and try again.';
+                this.submitError = e.message === 'timeout' ? this.t('timeout') : this.t('network');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 this.submitting = false;
             }

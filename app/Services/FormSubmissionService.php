@@ -24,10 +24,10 @@ class FormSubmissionService
         $request->validate(
             $this->rulesFor($request, $form),
             array_merge([
-                'answers.*.*.regex'          => 'Please enter a valid phone number — digits only, optionally starting with + or 00 for international numbers.',
-                'answers.*.*.before'         => 'You must be at least 18 years old.',
-                'answers.*.*.before_or_equal'=> 'Date cannot be in the future.',
-                'answers.*.*.min'            => 'Please select at least one option.',
+                'answers.*.*.regex'          => __('join.js.phone_server'),
+                'answers.*.*.before'         => __('join.js.dob'),
+                'answers.*.*.before_or_equal'=> __('join.js.future_date'),
+                'answers.*.*.min'            => __('join.js.select_one'),
             ], $this->numberFieldMessages($form))
         );
 
@@ -243,13 +243,13 @@ class FormSubmissionService
                 for ($repeat = 0; $repeat < $maxRepeats; $repeat++) {
                     if ($min !== null) {
                         $messages["answers.{$field->id}.{$repeat}.min"] = $isYear
-                            ? "Please enter a 4-digit year between {$min} and {$max}."
-                            : "Please enter a value of at least {$min}.";
+                            ? __('join.js.year_range', ['min' => $min, 'max' => $max])
+                            : __('join.js.number_min', ['min' => $min]);
                     }
                     if ($max !== null) {
                         $messages["answers.{$field->id}.{$repeat}.max"] = $isYear
-                            ? "Please enter a 4-digit year between {$min} and {$max}."
-                            : "Please enter a value no greater than {$max}.";
+                            ? __('join.js.year_range', ['min' => $min, 'max' => $max])
+                            : __('join.js.number_max', ['max' => $max]);
                     }
                 }
             }

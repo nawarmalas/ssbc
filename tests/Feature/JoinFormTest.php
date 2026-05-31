@@ -227,4 +227,36 @@ class JoinFormTest extends TestCase
             'answer_value' => 'https://linkedin.com/in/ahmad',
         ]);
     }
+
+    public function test_server_validation_messages_are_localised_in_arabic(): void
+    {
+        Mail::fake();
+
+        $section = FormSection::create([
+            'form_id' => 'join-us', 'title_en' => 'Personal', 'title_ar' => 'شخصي',
+            'is_repeatable' => false, 'order_index' => 0,
+        ]);
+        $nameField = FormField::create([
+            'section_id' => $section->id, 'label_en' => 'Full Name', 'label_ar' => 'الاسم',
+            'field_type' => 'text', 'is_required' => true, 'is_active' => true, 'order_index' => 0,
+        ]);
+        $phoneField = FormField::create([
+            'section_id' => $section->id, 'label_en' => 'Mobile', 'label_ar' => 'الجوال',
+            'field_type' => 'tel', 'is_required' => true, 'is_active' => true, 'order_index' => 1,
+        ]);
+
+        // Post an un-phone-like value to the Arabic form; the error must be Arabic.
+        $response = $this->post('/ar/join', [
+            '_token' => csrf_token(),
+            'answers' => $this->seededRequiredAnswers() + [
+                $nameField->id => [0 => 'أحمد'],
+                $phoneField->id => [0 => 'not-a-phone'],
+            ],
+            '_repeats' => [],
+        ]);
+
+        $response->assertSessionHasErrors([
+            "answers.{$phoneField->id}.0" => __('join.js.phone_server', [], 'ar'),
+        ]);
+    }
 }
