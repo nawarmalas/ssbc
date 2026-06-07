@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NewsPost;
+use App\Models\NewsPostImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -43,7 +44,7 @@ class NewsController extends Controller
             $data['published_at'] = null;
         }
 
-        NewsPost::create([
+        $post = NewsPost::create([
             'slug' => $slug,
             'title_en' => $data['title_en'],
             'title_ar' => $data['title_ar'],
@@ -59,12 +60,16 @@ class NewsController extends Controller
             'updated_by_user_id' => $request->user()?->id,
         ]);
 
+        $this->storeGalleryImages($request, $post, 0);
+
         return redirect()->route('admin.news.index')->with('status', __('admin.news_created'));
     }
 
     public function edit(NewsPost $news)
     {
         $this->authorizeSubadminDraftAccess($news);
+
+        $news->load('images');
 
         return view('admin.news.edit', ['post' => $news]);
     }
@@ -90,6 +95,20 @@ class NewsController extends Controller
             }
             $news->featured_image = $request->file('featured_image')->store('news/'.$news->slug, 'public');
         }
+
+        // Delete gallery images the editor checked for removal
+        $deleteIds = array_filter(array_map('intval', $request->input('delete_image_ids', [])));
+        if ($deleteIds) {
+            $toDelete = NewsPostImage::whereIn('id', $deleteIds)->where('news_post_id', $news->id)->get();
+            foreach ($toDelete as $img) {
+                Storage::disk('public')->delete($img->path);
+                $img->delete();
+            }
+        }
+
+        // Append any newly uploaded gallery images
+        $nextOrder = $news->images()->max('sort_order') + 1;
+        $this->storeGalleryImages($request, $news, (int) $nextOrder);
 
         $news->fill([
             'title_en' => $data['title_en'],
@@ -119,6 +138,11 @@ class NewsController extends Controller
         if ($news->featured_image) {
             Storage::disk('public')->delete($news->featured_image);
         }
+
+        foreach ($news->images as $img) {
+            Storage::disk('public')->delete($img->path);
+        }
+
         $news->delete();
 
         return redirect()->route('admin.news.index')->with('status', __('admin.news_deleted'));
@@ -127,17 +151,38 @@ class NewsController extends Controller
     protected function validatePost(Request $request): array
     {
         return $request->validate([
-            'title_en' => ['required', 'string', 'max:255'],
-            'title_ar' => ['required', 'string', 'max:255'],
-            'excerpt_en' => ['nullable', 'string', 'max:1000'],
-            'excerpt_ar' => ['nullable', 'string', 'max:1000'],
-            'content_en' => ['nullable', 'string'],
-            'content_ar' => ['nullable', 'string'],
-            'featured_image' => ['nullable', 'image', 'max:8192'],
-            'category' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:draft,published'],
-            'published_at' => ['nullable', 'date'],
+            'title_en'          => ['required', 'string', 'max:255'],
+            'title_ar'          => ['required', 'string', 'max:255'],
+            'excerpt_en'        => ['nullable', 'string', 'max:1000'],
+            'excerpt_ar'        => ['nullable', 'string', 'max:1000'],
+            'content_en'        => ['nullable', 'string'],
+            'content_ar'        => ['nullable', 'string'],
+            'featured_image'    => ['nullable', 'image', 'max:8192'],
+            'gallery_images'    => ['nullable', 'array', 'max:10'],
+            'gallery_images.*'  => ['image', 'max:8192'],
+            'delete_image_ids'  => ['nullable', 'array'],
+            'delete_image_ids.*'=> ['integer'],
+            'category'          => ['nullable', 'string', 'max:255'],
+            'status'            => ['required', 'in:draft,published'],
+            'published_at'      => ['nullable', 'date'],
         ]);
+    }
+
+    protected function storeGalleryImages(Request $request, NewsPost $post, int $startOrder): void
+    {
+        if (! $request->hasFile('gallery_images')) {
+            return;
+        }
+
+        $order = $startOrder;
+        foreach ($request->file('gallery_images') as $file) {
+            $path = $file->store('news/'.$post->slug.'/gallery', 'public');
+            NewsPostImage::create([
+                'news_post_id' => $post->id,
+                'path'         => $path,
+                'sort_order'   => $order++,
+            ]);
+        }
     }
 
     protected function publishedAtFromRequest(Request $request, string $status): ?Carbon

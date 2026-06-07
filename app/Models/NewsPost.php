@@ -54,6 +54,11 @@ class NewsPost extends Model
         return $locale === 'ar' ? ($this->content_ar ?: $this->content_en) : $this->content_en;
     }
 
+    public function images(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NewsPostImage::class)->orderBy('sort_order');
+    }
+
     public function featuredImageUrl(): ?string
     {
         return $this->featured_image ? Storage::disk('public')->url($this->featured_image) : null;

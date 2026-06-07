@@ -17,7 +17,7 @@
     </div>
 @endif
 
-<form method="POST" action="{{ $action }}" enctype="multipart/form-data" class="ssbc-admin-card p-6 space-y-6">
+<form method="POST" action="{{ $action }}" enctype="multipart/form-data" class="ssbc-admin-card p-6 space-y-6" id="news-form">
     @csrf
     @if($isEdit)
         @method('PATCH')
@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    {{-- Bilingual content --}}
+    {{-- Bilingual content (CKEditor replaces these textareas) --}}
     <div class="grid md:grid-cols-2 md:divide-x divide-gray-200">
         <div class="md:pr-6">
             <label class="ssbc-admin-label" for="content_en">{{ __('admin.news_content_en') }}</label>
@@ -107,6 +107,31 @@
             </div>
         @endif
         <input id="featured_image" name="featured_image" type="file" accept="image/*" class="ssbc-admin-input bg-white">
+        <p class="text-xs text-ssbc-sage mt-1">Used as the article thumbnail on listing pages. Upload a new file to replace the current one.</p>
+    </div>
+
+    {{-- Gallery images --}}
+    <div>
+        <label class="ssbc-admin-label">Additional Photos (Gallery)</label>
+
+        @if($isEdit && $post->images->isNotEmpty())
+            <p class="text-xs text-ssbc-sage mb-3">Check images to remove them when you save.</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                @foreach($post->images as $img)
+                    <div class="relative border border-gray-200 bg-gray-50">
+                        <img src="{{ $img->url() }}" alt="" class="w-full h-24 object-cover">
+                        <label class="flex items-center gap-1.5 px-2 py-1.5 bg-white/90 text-xs text-red-700 cursor-pointer hover:bg-red-50">
+                            <input type="checkbox" name="delete_image_ids[]" value="{{ $img->id }}" class="accent-red-600">
+                            Remove
+                        </label>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        <input id="gallery_images" name="gallery_images[]" type="file" accept="image/*" multiple
+               class="ssbc-admin-input bg-white">
+        <p class="text-xs text-ssbc-sage mt-1">Select multiple files at once. Maximum 10 images, 8 MB each. These appear as a photo gallery below the article body.</p>
     </div>
 
     <div class="flex items-center justify-between border-t border-gray-200 pt-6">
@@ -126,3 +151,108 @@
         ])
     </div>
 @endif
+
+@push('scripts')
+{{-- CKEditor 5 CDN — rich text editor with full paste-from-Word/Docs support --}}
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.3.0/ckeditor5.css">
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/44.3.0/ckeditor5.js",
+        "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/44.3.0/"
+    }
+}
+</script>
+<script type="module">
+import {
+    ClassicEditor,
+    Essentials,
+    Paragraph,
+    Bold, Italic, Underline, Strikethrough,
+    Subscript, Superscript,
+    Heading,
+    Link,
+    List, ListProperties,
+    BlockQuote,
+    Table, TableToolbar, TableProperties, TableCellProperties,
+    FontSize, FontColor, FontBackgroundColor, FontFamily,
+    GeneralHtmlSupport,
+    PasteFromOffice,
+    Alignment,
+    Indent, IndentBlock,
+    HorizontalLine,
+    RemoveFormat,
+} from 'ckeditor5';
+
+const sharedConfig = {
+    plugins: [
+        Essentials, Paragraph,
+        Bold, Italic, Underline, Strikethrough, Subscript, Superscript,
+        Heading, Link,
+        List, ListProperties,
+        BlockQuote,
+        Table, TableToolbar, TableProperties, TableCellProperties,
+        FontSize, FontColor, FontBackgroundColor, FontFamily,
+        GeneralHtmlSupport,
+        PasteFromOffice,
+        Alignment, Indent, IndentBlock,
+        HorizontalLine, RemoveFormat,
+    ],
+    toolbar: {
+        items: [
+            'heading', '|',
+            'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
+            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
+            'link', 'blockQuote', '|',
+            'alignment', '|',
+            'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+            'insertTable', '|',
+            'horizontalLine', '|',
+            'undo', 'redo',
+        ],
+        shouldNotGroupWhenFull: true,
+    },
+    table: {
+        contentToolbar: [
+            'tableColumn', 'tableRow', 'mergeTableCells',
+            'tableProperties', 'tableCellProperties',
+        ],
+    },
+    // Preserve ALL pasted HTML attributes, classes, and styles (GHS)
+    htmlSupport: {
+        allow: [
+            { name: /.*/, attributes: true, classes: true, styles: true },
+        ],
+    },
+    fontFamily: { supportAllValues: true },
+    fontSize: {
+        options: [10, 11, 12, 14, 'default', 18, 20, 22, 24, 28, 32, 36],
+        supportAllValues: true,
+    },
+};
+
+const form = document.getElementById('news-form');
+const editors = [];
+
+async function initEditor(id, extraConfig = {}) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const editor = await ClassicEditor.create(el, { ...sharedConfig, ...extraConfig });
+    editors.push({ el, editor });
+}
+
+await initEditor('content_en');
+await initEditor('content_ar', {
+    language: { ui: 'ar', content: 'ar' },
+});
+
+// Sync editor HTML back into the textarea values before the form submits
+if (form) {
+    form.addEventListener('submit', () => {
+        for (const { el, editor } of editors) {
+            el.value = editor.getData();
+        }
+    });
+}
+</script>
+@endpush

@@ -40,6 +40,19 @@
                 {!! $post->content($locale) !!}
             </div>
 
+            @if($post->images->isNotEmpty())
+                <div class="mt-10">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        @foreach($post->images as $img)
+                            <a href="{{ $img->url() }}" target="_blank" rel="noopener"
+                               class="block aspect-video overflow-hidden bg-ssbc-beige border border-ssbc-green/10 hover:border-ssbc-gold transition-colors">
+                                <img src="{{ $img->url() }}" alt="" class="w-full h-full object-cover">
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="my-12 w-full h-px bg-ssbc-gold/30"></div>
 
             <a href="{{ route('news.index', ['locale' => $locale]) }}" class="ssbc-link-gold text-sm">
