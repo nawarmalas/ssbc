@@ -205,3 +205,11 @@
         @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-ssbc-gold text-ssbc-green text-[10px] font-bold;
     }
 }
+
+/* CKEditor 5 — Arabic / RTL editing area */
+.ck-content[dir="rtl"],
+.ck-editor__editable[dir="rtl"] {
+    font-family: 'Noto Kufi Arabic', 'Cairo', Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+}

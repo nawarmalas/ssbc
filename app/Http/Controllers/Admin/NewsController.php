@@ -14,6 +14,7 @@ class NewsController extends Controller
     public function index()
     {
         $posts = NewsPost::query()
+            ->select(['id', 'slug', 'title_en', 'title_ar', 'status', 'published_at', 'created_at'])
             ->when(auth()->user()?->canPublishNews() === false, fn ($query) => $query->where('status', 'draft'))
             ->orderByDesc('created_at')
             ->get();
@@ -30,6 +31,7 @@ class NewsController extends Controller
 
     public function store(Request $request)
     {
+        $_perfStart = microtime(true);
         $data = $this->validatePost($request);
 
         $slug = NewsPost::generateUniqueSlug($data['title_en']);
@@ -61,6 +63,8 @@ class NewsController extends Controller
         ]);
 
         $this->storeGalleryImages($request, $post, 0);
+
+        \Illuminate\Support\Facades\Log::info('NewsController::store completed in ' . round((microtime(true) - $_perfStart) * 1000) . 'ms');
 
         return redirect()->route('admin.news.index')->with('status', __('admin.news_created'));
     }

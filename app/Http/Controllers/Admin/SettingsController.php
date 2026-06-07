@@ -219,6 +219,7 @@ class SettingsController extends Controller
         if ($settings?->hero_image_path) {
             Storage::disk('public')->delete($settings->hero_image_path);
             $settings->update(['hero_image_path' => null]);
+            SiteSetting::forgetCurrent();
         }
 
         return redirect()->route('admin.settings.edit')
@@ -240,6 +241,8 @@ class SettingsController extends Controller
             ];
             SiteSetting::create(array_merge($defaults, $data));
         }
+
+        SiteSetting::forgetCurrent();
     }
 
     /**

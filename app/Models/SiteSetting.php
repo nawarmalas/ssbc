@@ -40,14 +40,27 @@ class SiteSetting extends Model
         ];
     }
 
+    /** @var self|null In-process singleton so View::composer('*') only hits the DB once per request. */
+    private static ?self $instance = null;
+
     public static function current(): self
     {
-        return static::query()->first() ?? new self([
-            'contact_email' => 'info@ssbc.org',
-            'contact_phone' => '',
-            'address_en' => '',
-            'address_ar' => '',
-        ]);
+        if (static::$instance === null) {
+            static::$instance = static::query()->first() ?? new self([
+                'contact_email' => 'info@ssbc.org',
+                'contact_phone' => '',
+                'address_en' => '',
+                'address_ar' => '',
+            ]);
+        }
+
+        return static::$instance;
+    }
+
+    /** Call after saving settings so the cached instance is refreshed on the next access. */
+    public static function forgetCurrent(): void
+    {
+        static::$instance = null;
     }
 
     public function address(string $locale): string
