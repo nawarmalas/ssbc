@@ -5,11 +5,20 @@ use App\Support\ArabicReshaper;
 // NotoSansArabic includes Arabic Presentation Forms A & B — required for
 // dompdf to render the contextual glyphs produced by ArabicReshaper.
 $arabicFontPaths = [
+    // Noto Sans Arabic — system install (Ubuntu/Debian: apt install fonts-noto-core)
     '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
     '/usr/share/fonts/noto/NotoSansArabic-Regular.ttf',
     '/usr/share/fonts/opentype/noto/NotoSansArabic-Regular.ttf',
+    // GNU FreeFont — also covers Arabic Presentation Forms A & B
+    '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+    '/usr/share/fonts/truetype/freefont/FreeSerif.ttf',
+    '/usr/share/fonts/freefont/FreeSans.ttf',
+    '/usr/share/fonts/freefont/FreeSerif.ttf',
+    // Project-local copies (drop any Arabic TTF here)
     storage_path('fonts/NotoSansArabic-Regular.ttf'),
+    storage_path('fonts/arabic.ttf'),
     public_path('fonts/NotoSansArabic-Regular.ttf'),
+    public_path('fonts/arabic.ttf'),
 ];
 $arabicFontUrl = null;
 foreach ($arabicFontPaths as $p) {
