@@ -152,4 +152,69 @@
     </div>
 @endif
 
-{{-- TipTap editor is initialized via resources/js/app.js --}}
+@push('scripts')
+{{-- ═══════════════════════════════════════════════════════ --}}
+{{-- CKEditor 5 — Word-style editor. CDN only, zero build.  --}}
+{{-- ═══════════════════════════════════════════════════════ --}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<style>
+  .ck-editor__editable_inline { min-height: 420px !important; font-size: 14px !important; line-height: 1.8 !important; padding: 20px 24px !important; color: #111827 !important; }
+  .ck-excerpt .ck-editor__editable_inline { min-height: 140px !important; }
+  .ck-arabic .ck-editor__editable_inline { direction: rtl !important; text-align: right !important; font-family: 'Cairo', 'Noto Sans Arabic', sans-serif !important; }
+  .ck-editor__editable_inline table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  .ck-editor__editable_inline td, .ck-editor__editable_inline th { border: 1px solid #d1d5db; padding: 8px 12px; min-width: 60px; }
+  .ck-editor__editable_inline th { background: #f3f4f6; font-weight: 600; }
+  .ck.ck-toolbar { background: #f5f6f7 !important; border-color: #d1d5db !important; }
+  .ck.ck-button.ck-on { background: #1a3a2a !important; color: #fff !important; }
+  .ck.ck-button:hover:not(.ck-disabled) { background: #e5e7eb !important; }
+  .ssbc-hidden-ta { display: none !important; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var fullToolbar = { items: ['heading','|','fontSize','fontFamily','|','bold','italic','underline','strikethrough','|','fontColor','fontBackgroundColor','|','alignment','|','bulletedList','numberedList','outdent','indent','|','link','insertTable','blockQuote','horizontalLine','|','undo','redo','|','removeFormat'] }
+  var excerptToolbar = { items: ['bold','italic','underline','|','fontSize','fontColor','|','alignment','|','bulletedList','numberedList','|','link','|','undo','redo'] }
+  var fontSizes = { options: [10,11,12,13,14,'default',16,18,20,22,24,28,32,36,48,72], supportAllValues: true }
+  var fontFamilies = { options: ['default','Arial, Helvetica, sans-serif','Georgia, serif','Times New Roman, Times, serif','Courier New, Courier, monospace','Trebuchet MS, Helvetica, sans-serif','Verdana, Geneva, sans-serif','Cairo, Noto Sans Arabic, sans-serif'], supportAllValues: true }
+  var tableConfig = { contentToolbar: ['tableColumn','tableRow','mergeTableCells','tableProperties','tableCellProperties'] }
+  var headingConfig = { options: [{ model:'paragraph', title:'Normal text', class:'ck-heading_paragraph' },{ model:'heading1', view:'h1', title:'Heading 1', class:'ck-heading_heading1' },{ model:'heading2', view:'h2', title:'Heading 2', class:'ck-heading_heading2' },{ model:'heading3', view:'h3', title:'Heading 3', class:'ck-heading_heading3' },{ model:'heading4', view:'h4', title:'Heading 4', class:'ck-heading_heading4' }] }
+
+  function initEditor(textareaId, options) {
+    var ta = document.getElementById(textareaId)
+    if (!ta) { console.warn('SSBC Editor: textarea not found → id:', textareaId); return }
+    var wrapper = document.createElement('div')
+    wrapper.className = options.wrapperClass || ''
+    ta.parentNode.insertBefore(wrapper, ta.nextSibling)
+    ta.classList.add('ssbc-hidden-ta')
+    ClassicEditor.create(wrapper, {
+      initialData: ta.value || '',
+      toolbar: options.toolbar || fullToolbar,
+      fontSize: fontSizes,
+      fontFamily: fontFamilies,
+      table: tableConfig,
+      heading: headingConfig,
+      language: { ui: options.lang || 'en', content: options.lang || 'en' },
+    }).then(function (editor) {
+      editor.model.document.on('change:data', function () { ta.value = editor.getData() })
+      var form = ta.closest('form')
+      if (form) { form.addEventListener('submit', function () { ta.value = editor.getData() }) }
+      if (options.rtl) {
+        editor.editing.view.change(function (writer) {
+          writer.setAttribute('dir', 'rtl', editor.editing.view.document.getRoot())
+        })
+      }
+    }).catch(function (error) {
+      console.error('CKEditor failed on #' + textareaId, error)
+      ta.classList.remove('ssbc-hidden-ta')
+      if (wrapper) wrapper.remove()
+    })
+  }
+
+  initEditor('content_en', { toolbar: fullToolbar, lang: 'en', rtl: false, wrapperClass: 'ck-content-en' })
+  initEditor('content_ar', { toolbar: fullToolbar, lang: 'ar', rtl: true,  wrapperClass: 'ck-arabic' })
+  initEditor('excerpt_en', { toolbar: excerptToolbar, lang: 'en', rtl: false, wrapperClass: 'ck-excerpt' })
+  initEditor('excerpt_ar', { toolbar: excerptToolbar, lang: 'ar', rtl: true,  wrapperClass: 'ck-excerpt ck-arabic' })
+})
+</script>
+@endpush
