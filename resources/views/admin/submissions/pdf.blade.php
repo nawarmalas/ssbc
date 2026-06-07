@@ -1,6 +1,3 @@
-@php
-use App\Support\ArabicReshaper;
-@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,9 +37,8 @@ use App\Support\ArabicReshaper;
                         $isAr    = false;
                         $dispVal = null;
                     } else {
-                        $rawVal  = $field->formatAnswer($submission->answerFor($field->id, $r));
-                        $isAr    = ArabicReshaper::hasArabic($rawVal);
-                        $dispVal = $isAr ? ArabicReshaper::reshape($rawVal) : $rawVal;
+                        $dispVal = $field->formatAnswer($submission->answerFor($field->id, $r));
+                        $isAr    = (bool) preg_match('/[\x{0600}-\x{06FF}]/u', $dispVal);
                     }
                 @endphp
                 <tr>

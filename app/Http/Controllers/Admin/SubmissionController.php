@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FormDefinition;
 use App\Models\FormSection;
 use App\Models\FormSubmission;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Mpdf\Mpdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -75,10 +75,23 @@ class SubmissionController extends Controller
             ->orderBy('order_index')
             ->get();
 
-        $pdf = Pdf::loadView('admin.submissions.pdf', compact('submission', 'sections'))
-            ->setPaper('a4', 'portrait');
+        $html = view('admin.submissions.pdf', compact('submission', 'sections'))->render();
 
-        return $pdf->download($this->pdfFilename($submission, $sections));
+        $mpdf = new Mpdf([
+            'mode'          => 'utf-8',
+            'format'        => 'A4',
+            'margin_left'   => 15,
+            'margin_right'  => 15,
+            'margin_top'    => 20,
+            'margin_bottom' => 20,
+        ]);
+        $mpdf->WriteHTML($html);
+
+        $filename = $this->pdfFilename($submission, $sections);
+
+        return response($mpdf->Output($filename, 'S'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
     }
 
     private function pdfFilename(FormSubmission $submission, $sections): string
