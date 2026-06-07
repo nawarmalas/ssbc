@@ -78,7 +78,30 @@ class SubmissionController extends Controller
         $pdf = Pdf::loadView('admin.submissions.pdf', compact('submission', 'sections'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download("ssbc-submission-{$submission->id}.pdf");
+        return $pdf->download($this->pdfFilename($submission, $sections));
+    }
+
+    private function pdfFilename(FormSubmission $submission, $sections): string
+    {
+        $englishNameField = $sections
+            ->flatMap(fn ($s) => $s->allFields)
+            ->first(fn ($f) => $f->field_type === 'text'
+                && str_contains(strtolower($f->label_en ?? ''), 'english'));
+
+        if ($englishNameField) {
+            $raw = $submission->answerFor($englishNameField->id, 0);
+            if ($raw && trim($raw) !== '') {
+                $slug = preg_replace('/[^a-zA-Z0-9\s\-]/', '', trim($raw));
+                $slug = preg_replace('/\s+/', '-', $slug);
+                $slug = preg_replace('/-+/', '-', $slug);
+                $slug = trim($slug, '-');
+                if ($slug !== '') {
+                    return "{$slug}-Application.pdf";
+                }
+            }
+        }
+
+        return "ssbc-submission-{$submission->id}.pdf";
     }
 
     public function export(Request $request)

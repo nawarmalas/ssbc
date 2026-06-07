@@ -1,3 +1,4 @@
+@php use App\Support\ArabicReshaper; @endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,6 +13,7 @@
   td { padding: 4px 8px; border: 1px solid #e0e0e0; font-size: 10px; vertical-align: top; }
   td:first-child { background: #f5f5f0; font-weight: bold; width: 35%; }
   .meta { font-size: 9px; color: #888; margin-bottom: 16px; }
+  .ar { direction: rtl; unicode-bidi: bidi-override; text-align: right; }
 </style>
 </head>
 <body>
@@ -31,9 +33,20 @@
         <table>
             @foreach($section->allFields as $field)
                 @if($field->field_type === 'declaration') @continue @endif
+                @php
+                    if ($field->field_type === 'file') {
+                        $rawVal  = null;
+                        $isAr    = false;
+                        $dispVal = null;
+                    } else {
+                        $rawVal  = $field->formatAnswer($submission->answerFor($field->id, $r));
+                        $isAr    = ArabicReshaper::hasArabic($rawVal);
+                        $dispVal = $isAr ? ArabicReshaper::reshape($rawVal) : $rawVal;
+                    }
+                @endphp
                 <tr>
                     <td>{{ $field->label_en }}</td>
-                    <td>
+                    <td @if($isAr)class="ar"@endif>
                         @if($field->field_type === 'file')
                             @php $list = $submission->uploadsFor($field->id, $r); @endphp
                             @if($list->isEmpty())
@@ -44,7 +57,7 @@
                                 @endforeach
                             @endif
                         @else
-                            {{ $field->formatAnswer($submission->answerFor($field->id, $r)) }}
+                            {{ $dispVal }}
                         @endif
                     </td>
                 </tr>
