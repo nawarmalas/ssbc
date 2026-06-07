@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    {{-- Bilingual content (CKEditor replaces these textareas) --}}
+    {{-- Bilingual content (TipTap editor targets these textareas via app.js) --}}
     <div class="grid md:grid-cols-2 md:divide-x divide-gray-200">
         <div class="md:pr-6">
             <label class="ssbc-admin-label" for="content_en">{{ __('admin.news_content_en') }}</label>
@@ -152,107 +152,4 @@
     </div>
 @endif
 
-@push('scripts')
-{{-- CKEditor 5 CDN — rich text editor with full paste-from-Word/Docs support --}}
-<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.3.0/ckeditor5.css">
-<script type="importmap">
-{
-    "imports": {
-        "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/44.3.0/ckeditor5.js",
-        "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/44.3.0/"
-    }
-}
-</script>
-<script type="module">
-import {
-    ClassicEditor,
-    Essentials,
-    Paragraph,
-    Bold, Italic, Underline, Strikethrough,
-    Subscript, Superscript,
-    Heading,
-    Link,
-    List, ListProperties,
-    BlockQuote,
-    Table, TableToolbar, TableProperties, TableCellProperties,
-    FontSize, FontColor, FontBackgroundColor, FontFamily,
-    GeneralHtmlSupport,
-    PasteFromOffice,
-    Alignment,
-    Indent, IndentBlock,
-    HorizontalLine,
-    RemoveFormat,
-} from 'ckeditor5';
-
-const sharedConfig = {
-    plugins: [
-        Essentials, Paragraph,
-        Bold, Italic, Underline, Strikethrough, Subscript, Superscript,
-        Heading, Link,
-        List, ListProperties,
-        BlockQuote,
-        Table, TableToolbar, TableProperties, TableCellProperties,
-        FontSize, FontColor, FontBackgroundColor, FontFamily,
-        GeneralHtmlSupport,
-        PasteFromOffice,
-        Alignment, Indent, IndentBlock,
-        HorizontalLine, RemoveFormat,
-    ],
-    toolbar: {
-        items: [
-            'heading', '|',
-            'bold', 'italic', 'underline', 'strikethrough', 'removeFormat', '|',
-            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
-            'link', 'blockQuote', '|',
-            'alignment', '|',
-            'bulletedList', 'numberedList', 'outdent', 'indent', '|',
-            'insertTable', '|',
-            'horizontalLine', '|',
-            'undo', 'redo',
-        ],
-        shouldNotGroupWhenFull: true,
-    },
-    table: {
-        contentToolbar: [
-            'tableColumn', 'tableRow', 'mergeTableCells',
-            'tableProperties', 'tableCellProperties',
-        ],
-    },
-    // Preserve ALL pasted HTML attributes, classes, and styles (GHS)
-    htmlSupport: {
-        allow: [
-            { name: /.*/, attributes: true, classes: true, styles: true },
-        ],
-    },
-    fontFamily: { supportAllValues: true },
-    fontSize: {
-        options: [10, 11, 12, 14, 'default', 18, 20, 22, 24, 28, 32, 36],
-        supportAllValues: true,
-    },
-};
-
-const form = document.getElementById('news-form');
-const editors = [];
-
-async function initEditor(id, extraConfig = {}) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const editor = await ClassicEditor.create(el, { ...sharedConfig, ...extraConfig });
-    editors.push({ el, editor });
-}
-
-await initEditor('content_en');
-await initEditor('content_ar', {
-    language: { ui: 'ar', content: 'ar' },
-});
-
-// Sync editor HTML back into the textarea values before the form submits
-if (form) {
-    form.addEventListener('submit', () => {
-        for (const { el, editor } of editors) {
-            el.value = editor.getData();
-        }
-    });
-}
-</script>
-@endpush
+{{-- TipTap editor is initialized via resources/js/app.js --}}

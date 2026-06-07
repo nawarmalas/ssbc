@@ -36,7 +36,7 @@
                 </div>
             @endif
 
-            <div class="prose prose-lg max-w-none prose-headings:font-display prose-headings:text-ssbc-green prose-a:text-ssbc-gold">
+            <div class="prose prose-lg max-w-none prose-headings:font-display prose-headings:text-ssbc-green prose-a:text-ssbc-gold article-content {{ $locale === 'ar' ? 'rtl' : '' }}">
                 {!! $post->content($locale) !!}
             </div>
 

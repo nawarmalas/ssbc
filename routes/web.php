@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormBuilderController;
 use App\Http\Controllers\Admin\FormDefinitionController as AdminFormDefinitionController;
+use App\Http\Controllers\Admin\ImageUploadController as AdminImageUploadController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\SectorController as AdminSectorController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -85,6 +86,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('news', AdminNewsController::class)
             ->middleware('admin.permission:news_write,news_publish')
             ->except(['show']);
+
+        Route::post('upload-image', [AdminImageUploadController::class, 'store'])
+            ->middleware('admin.permission:news_write,news_publish')
+            ->name('upload-image');
 
         Route::middleware('admin.permission:site_customization')->group(function () {
             Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
