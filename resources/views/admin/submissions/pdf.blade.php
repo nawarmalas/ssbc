@@ -34,7 +34,7 @@ foreach ($arabicFontPaths as $p) {
 <meta charset="UTF-8">
 <style>
   @if($arabicFontUrl)
-  @font-face {
+  @@font-face {
     font-family: 'NotoSansArabic';
     src: url('{{ $arabicFontUrl }}') format('truetype');
     font-weight: normal;
