@@ -17,6 +17,7 @@ import FontSize from 'tiptap-extension-font-size'
 
 function buildToolbar(wrap, editor, isRtl) {
   const toolbar = wrap.querySelector('.tt-toolbar')
+  if (!toolbar) return
   toolbar.innerHTML = ''
 
   const btn = (label, title, action, isActive) => {
