@@ -9,12 +9,7 @@ $arabicFontPaths = [
     '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
     '/usr/share/fonts/noto/NotoSansArabic-Regular.ttf',
     '/usr/share/fonts/opentype/noto/NotoSansArabic-Regular.ttf',
-    // GNU FreeFont — also covers Arabic Presentation Forms A & B
-    '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-    '/usr/share/fonts/truetype/freefont/FreeSerif.ttf',
-    '/usr/share/fonts/freefont/FreeSans.ttf',
-    '/usr/share/fonts/freefont/FreeSerif.ttf',
-    // Project-local copies (drop any Arabic TTF here)
+    // Project-local copies (drop NotoSansArabic-Regular.ttf here to enable Arabic glyphs)
     storage_path('fonts/NotoSansArabic-Regular.ttf'),
     storage_path('fonts/arabic.ttf'),
     public_path('fonts/NotoSansArabic-Regular.ttf'),
