@@ -19,12 +19,12 @@
     $current = request()->route() ? request()->route()->getName() : '';
     $authUser = auth()->user();
 
-    $unread = $authUser?->isAdmin()
-        ? [
-            'contact'     => ContactSubmission::where('status', 'new')->count(),
-            'submissions' => FormSubmission::where('status', 'pending')->count(),
-        ]
-        : ['contact' => 0, 'submissions' => 0];
+    $unread = [
+        'contact'     => $authUser?->isAdmin() ? ContactSubmission::where('status', 'new')->count() : 0,
+        'submissions' => ($authUser?->isAdmin() || $authUser?->canViewSubmissions())
+            ? FormSubmission::where('status', 'pending')->count()
+            : 0,
+    ];
 
     // Build the nav from individual permissions rather than role buckets so
     // adding a new permission later is a one-line append.
@@ -37,11 +37,13 @@
     }
     if ($authUser?->isAdmin()) {
         $nav[] = ['key' => 'forms',         'route' => 'admin.forms.index',         'label' => __('admin.form_builder'), 'badge' => null];
-        $nav[] = ['key' => 'submissions',   'route' => 'admin.submissions.index',   'label' => __('admin.submissions'),  'badge' => $unread['submissions']];
         $nav[] = ['key' => 'contact',       'route' => 'admin.contact.index',       'label' => __('admin.contact'),      'badge' => $unread['contact']];
         $nav[] = ['key' => 'users',         'route' => 'admin.users.index',         'label' => 'Admin Users',            'badge' => null];
         $nav[] = ['key' => 'board-members', 'route' => 'admin.board-members.index', 'label' => 'Board Members',          'badge' => null];
         $nav[] = ['key' => 'sectors',       'route' => 'admin.sectors.index',       'label' => 'Sectors',                'badge' => null];
+    }
+    if ($authUser?->canViewSubmissions()) {
+        $nav[] = ['key' => 'submissions', 'route' => 'admin.submissions.index', 'label' => __('admin.submissions'), 'badge' => $unread['submissions']];
     }
     if ($authUser?->canCustomizeSite()) {
         $nav[] = ['key' => 'settings', 'route' => 'admin.settings.edit', 'label' => __('admin.site_customization'), 'badge' => null];
@@ -60,7 +62,7 @@
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
     <div class="h-24 flex items-center px-6 border-b border-white/10">
-        <a href="{{ $authUser?->isAdmin() ? route('admin.dashboard') : ($authUser?->canManageNews() ? route('admin.news.index') : route('admin.settings.edit')) }}" aria-label="{{ __('common.site_name') }}">
+        <a href="{{ $authUser?->isAdmin() ? route('admin.dashboard') : ($authUser?->canManageNews() ? route('admin.news.index') : ($authUser?->canViewSubmissions() ? route('admin.submissions.index') : route('admin.settings.edit'))) }}" aria-label="{{ __('common.site_name') }}">
             <img src="{{ asset('images/logos/logo-one-tone.png') }}"
                  alt="{{ __('common.site_name') }}"
                  class="h-16 w-auto"

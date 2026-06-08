@@ -27,6 +27,7 @@ class User extends Authenticatable
         'news_write'         => 'News — write drafts',
         'news_publish'       => 'News — publish & edit published posts',
         'site_customization' => 'Site Customization',
+        'view_submissions'   => 'Submissions — view & manage submissions',
     ];
 
     protected $fillable = [
@@ -92,6 +93,11 @@ class User extends Authenticatable
     public function canCustomizeSite(): bool
     {
         return $this->hasPermission('site_customization');
+    }
+
+    public function canViewSubmissions(): bool
+    {
+        return $this->hasPermission('view_submissions');
     }
 
     public function roleLabel(): string

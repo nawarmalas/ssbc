@@ -65,6 +65,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             if ($user->canCustomizeSite()) {
                 return redirect()->route('admin.settings.edit');
             }
+            if ($user->canViewSubmissions()) {
+                return redirect()->route('admin.submissions.index');
+            }
             abort(403);
         }
 
@@ -127,6 +130,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/forms/{formDefinition}/fields/{field}', [FormBuilderController::class, 'destroyField'])->name('forms.fields.destroy');
             Route::post('/forms/{formDefinition}/fields/reorder', [FormBuilderController::class, 'reorderFields'])->name('forms.fields.reorder');
 
+        });
+
+        Route::middleware('admin.permission:view_submissions')->group(function () {
             Route::get('/submissions/export', [SubmissionController::class, 'export'])->name('submissions.export');
             Route::get('/submissions', [SubmissionController::class, 'index'])->name('submissions.index');
             Route::get('/submissions/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
