@@ -110,6 +110,32 @@
         <p class="text-xs text-ssbc-sage mt-1">Used as the article thumbnail on listing pages. Upload a new file to replace the current one.</p>
     </div>
 
+    {{-- Content Blocks --}}
+    <div>
+        <label class="ssbc-admin-label">Content Blocks</label>
+        <p class="text-xs text-ssbc-sage mb-4">Build the article body as ordered text and image blocks. EN and AR blocks are fully independent.</p>
+
+        <div class="flex border-b border-gray-200 mb-4">
+            <button type="button" id="cb-tab-en"
+                    class="px-4 py-2 text-sm font-medium border-b-2 border-ssbc-green text-ssbc-green -mb-px">English</button>
+            <button type="button" id="cb-tab-ar"
+                    class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-ssbc-green -mb-px">Arabic (عربي)</button>
+        </div>
+
+        <div id="cb-panel-en">
+            @include('admin.news._content_blocks', [
+                'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'en')->values() : collect(),
+                'locale' => 'en',
+            ])
+        </div>
+        <div id="cb-panel-ar" class="hidden">
+            @include('admin.news._content_blocks', [
+                'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'ar')->values() : collect(),
+                'locale' => 'ar',
+            ])
+        </div>
+    </div>
+
     {{-- Gallery images --}}
     <div>
         <label class="ssbc-admin-label">Additional Photos (Gallery)</label>
@@ -153,12 +179,10 @@
 @endif
 
 @push('scripts')
-{{-- ═══════════════════════════════════════════════════════ --}}
-{{-- CKEditor 5 — Word-style editor. CDN only, zero build.  --}}
-{{-- ═══════════════════════════════════════════════════════ --}}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <style>
   .ck-editor__editable_inline { min-height: 420px !important; font-size: 14px !important; line-height: 1.8 !important; padding: 20px 24px !important; color: #111827 !important; }
   .ck-excerpt .ck-editor__editable_inline { min-height: 140px !important; }
@@ -215,6 +239,189 @@ document.addEventListener('DOMContentLoaded', function () {
   initEditor('content_ar', { toolbar: fullToolbar, lang: 'ar', rtl: true,  wrapperClass: 'ck-arabic' })
   initEditor('excerpt_en', { toolbar: excerptToolbar, lang: 'en', rtl: false, wrapperClass: 'ck-excerpt' })
   initEditor('excerpt_ar', { toolbar: excerptToolbar, lang: 'ar', rtl: true,  wrapperClass: 'ck-excerpt ck-arabic' })
+
+  // ── Content Blocks ────────────────────────────────────────────────────
+  var blockEditors = {}
+  var blockCounters = {
+    en: parseInt((document.getElementById('blocks-section-en') || {}).dataset.count || '0'),
+    ar: parseInt((document.getElementById('blocks-section-ar') || {}).dataset.count || '0')
+  }
+  var initializedBlockTAs = new Set()
+
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+  function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+  function initBlockEditor(taId, isRTL) {
+    if (initializedBlockTAs.has(taId)) return
+    var ta = document.getElementById(taId)
+    if (!ta) return
+    initializedBlockTAs.add(taId)
+    var wrapper = document.createElement('div')
+    wrapper.className = isRTL ? 'ck-arabic' : ''
+    ta.parentNode.insertBefore(wrapper, ta.nextSibling)
+    ta.classList.add('ssbc-hidden-ta')
+    ClassicEditor.create(wrapper, {
+      initialData: ta.value || '',
+      toolbar: fullToolbar, fontSize: fontSizes, fontFamily: fontFamilies,
+      table: tableConfig, heading: headingConfig,
+      language: { ui: isRTL ? 'ar' : 'en', content: isRTL ? 'ar' : 'en' },
+    }).then(function(editor) {
+      blockEditors[taId] = editor
+      editor.model.document.on('change:data', function() { ta.value = editor.getData() })
+      if (isRTL) {
+        editor.editing.view.change(function(writer) {
+          writer.setAttribute('dir', 'rtl', editor.editing.view.document.getRoot())
+        })
+      }
+      var form = ta.closest('form')
+      if (form) form.addEventListener('submit', function() { ta.value = editor.getData() }, { once: true })
+    }).catch(function(err) {
+      console.error('Block CKEditor failed #' + taId, err)
+      ta.classList.remove('ssbc-hidden-ta')
+      wrapper.remove()
+    })
+  }
+
+  function ensureBlockEditors(locale) {
+    var isAr = locale === 'ar'
+    document.querySelectorAll('#blocks-list-' + locale + ' .block-textarea').forEach(function(ta) {
+      initBlockEditor(ta.id, isAr)
+    })
+  }
+
+  function updateSortOrders(locale) {
+    document.querySelectorAll('#blocks-list-' + locale + ' .block-card').forEach(function(card, i) {
+      var inp = card.querySelector('.block-sort-order')
+      if (inp) inp.value = i
+    })
+  }
+
+  function buildTextBlockHtml(locale, slot) {
+    var isAr = locale === 'ar'
+    var p = 'blocks_' + locale + '[' + slot + ']'
+    var taId = 'block-ta-' + locale + '-' + slot
+    return '<div class="block-card border border-gray-200 bg-gray-50 p-4" data-type="text" data-slot="' + slot + '">' +
+      '<input type="hidden" name="' + p + '[block_id]" value="">' +
+      '<input type="hidden" name="' + p + '[type]" value="text">' +
+      '<input type="hidden" name="' + p + '[sort_order]" class="block-sort-order" value="0">' +
+      '<div class="flex items-center justify-between mb-3">' +
+        '<span class="text-xs font-semibold uppercase px-2 py-0.5 bg-blue-100 text-blue-700">Text</span>' +
+        '<div class="flex items-center gap-3">' +
+          '<span class="drag-handle cursor-grab text-gray-400 hover:text-gray-600 select-none text-lg leading-none" title="Drag to reorder">⠿</span>' +
+          '<button type="button" class="block-remove-btn text-xs text-red-600 hover:text-red-800">Remove</button>' +
+        '</div>' +
+      '</div>' +
+      '<textarea name="' + p + '[content]" id="' + taId + '" class="ssbc-admin-input font-mono text-xs block-textarea"' +
+        (isAr ? ' dir="rtl" lang="ar"' : '') + ' rows="6"></textarea>' +
+    '</div>'
+  }
+
+  function buildImageBlockHtml(locale, slot) {
+    var p   = 'blocks_' + locale + '[' + slot + ']'
+    var img = 'block_image_' + locale + '[' + slot + ']'
+    var pvId = 'block-img-preview-' + locale + '-' + slot
+    return '<div class="block-card border border-gray-200 bg-gray-50 p-4" data-type="image" data-slot="' + slot + '">' +
+      '<input type="hidden" name="' + p + '[block_id]" value="">' +
+      '<input type="hidden" name="' + p + '[type]" value="image">' +
+      '<input type="hidden" name="' + p + '[sort_order]" class="block-sort-order" value="0">' +
+      '<div class="flex items-center justify-between mb-3">' +
+        '<span class="text-xs font-semibold uppercase px-2 py-0.5 bg-emerald-100 text-emerald-700">Image</span>' +
+        '<div class="flex items-center gap-3">' +
+          '<span class="drag-handle cursor-grab text-gray-400 hover:text-gray-600 select-none text-lg leading-none" title="Drag to reorder">⠿</span>' +
+          '<button type="button" class="block-remove-btn text-xs text-red-600 hover:text-red-800">Remove</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="space-y-3">' +
+        '<div id="' + pvId + '" class="block-img-preview"></div>' +
+        '<div><label class="text-xs text-ssbc-sage block mb-1">Upload image</label>' +
+          '<input type="file" name="' + img + '" accept="image/*" class="ssbc-admin-input bg-white block-img-input" data-preview="' + pvId + '">' +
+        '</div>' +
+        '<div class="grid grid-cols-2 gap-3">' +
+          '<div><label class="text-xs text-ssbc-sage block mb-1">Caption (English)</label>' +
+            '<input type="text" name="' + p + '[caption_en]" class="ssbc-admin-input text-sm"></div>' +
+          '<div><label class="text-xs text-ssbc-sage block mb-1">Caption (Arabic)</label>' +
+            '<input type="text" name="' + p + '[caption_ar]" class="ssbc-admin-input text-sm" dir="rtl"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  }
+
+  // Tab switching
+  document.getElementById('cb-tab-en').addEventListener('click', function() {
+    document.getElementById('cb-panel-en').classList.remove('hidden')
+    document.getElementById('cb-panel-ar').classList.add('hidden')
+    this.classList.add('border-b-2','border-ssbc-green','text-ssbc-green')
+    this.classList.remove('text-gray-500')
+    var tAr = document.getElementById('cb-tab-ar')
+    tAr.classList.remove('border-b-2','border-ssbc-green','text-ssbc-green')
+    tAr.classList.add('text-gray-500')
+  })
+  document.getElementById('cb-tab-ar').addEventListener('click', function() {
+    document.getElementById('cb-panel-ar').classList.remove('hidden')
+    document.getElementById('cb-panel-en').classList.add('hidden')
+    this.classList.add('border-b-2','border-ssbc-green','text-ssbc-green')
+    this.classList.remove('text-gray-500')
+    var tEn = document.getElementById('cb-tab-en')
+    tEn.classList.remove('border-b-2','border-ssbc-green','text-ssbc-green')
+    tEn.classList.add('text-gray-500')
+    ensureBlockEditors('ar')
+  })
+
+  // Add block buttons (event delegation on each section)
+  ;['en','ar'].forEach(function(locale) {
+    var section = document.getElementById('blocks-section-' + locale)
+    if (!section) return
+
+    section.addEventListener('click', function(e) {
+      // Remove button
+      if (e.target.classList.contains('block-remove-btn')) {
+        var card = e.target.closest('.block-card')
+        if (!card) return
+        var slot = card.dataset.slot
+        var key = 'block-ta-' + locale + '-' + slot
+        if (blockEditors[key]) { blockEditors[key].destroy(); delete blockEditors[key] }
+        initializedBlockTAs.delete(key)
+        card.remove()
+        updateSortOrders(locale)
+      }
+      // Add buttons
+      if (e.target.classList.contains('add-block-btn')) {
+        var type = e.target.dataset.type
+        var slot2 = blockCounters[locale]++
+        var html = type === 'text' ? buildTextBlockHtml(locale, slot2) : buildImageBlockHtml(locale, slot2)
+        document.getElementById('blocks-list-' + locale).insertAdjacentHTML('beforeend', html)
+        if (type === 'text') initBlockEditor('block-ta-' + locale + '-' + slot2, locale === 'ar')
+        updateSortOrders(locale)
+      }
+    })
+
+    // SortableJS
+    if (typeof Sortable !== 'undefined') {
+      Sortable.create(document.getElementById('blocks-list-' + locale), {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: function() { updateSortOrders(locale) }
+      })
+    }
+  })
+
+  // Image preview on file select (delegated)
+  document.getElementById('news-form').addEventListener('change', function(e) {
+    if (!e.target.classList.contains('block-img-input')) return
+    var file = e.target.files[0]
+    if (!file) return
+    var pvId = e.target.dataset.preview
+    var pv = document.getElementById(pvId)
+    if (!pv) return
+    var reader = new FileReader()
+    reader.onload = function(ev) {
+      pv.innerHTML = '<img src="' + ev.target.result + '" class="h-32 border border-gray-200 object-cover">'
+    }
+    reader.readAsDataURL(file)
+  })
+
+  // Init EN block editors on load (EN tab is active by default)
+  ensureBlockEditors('en')
 })
 </script>
 @endpush

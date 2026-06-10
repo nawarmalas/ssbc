@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
-@php $locale = app()->getLocale(); @endphp
+@php
+    $locale = app()->getLocale();
+    $blocks = $post->contentBlocks->where('locale', $locale);
+    $formattedDate = $post->published_at
+        ? \App\Support\NewsDate::format(
+            $post->published_at->copy()->timezone(config('app.admin_timezone')),
+            $locale
+          )
+        : null;
+@endphp
 
 @section('title', $post->title($locale) . ' — ' . __('common.site_name'))
 @section('meta_description', $post->excerpt($locale) ?: __('seo.news_index.description'))
@@ -19,8 +28,8 @@
     <div class="ssbc-container py-16">
         <article class="max-w-3xl mx-auto">
             <div class="flex items-center gap-3 mb-4 text-sm text-ssbc-gold uppercase tracking-wider font-semibold">
-                @if($post->published_at)
-                    <span>{{ $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('d F Y') }}</span>
+                @if($formattedDate)
+                    <span>{{ $formattedDate }}</span>
                 @endif
                 @if($post->category)
                     <span class="text-ssbc-sage">·</span>
@@ -36,9 +45,35 @@
                 </div>
             @endif
 
-            <div class="prose prose-lg max-w-none prose-headings:font-display prose-headings:text-ssbc-green prose-a:text-ssbc-gold article-content {{ $locale === 'ar' ? 'rtl' : '' }}">
-                {!! $post->content($locale) !!}
-            </div>
+            {{-- Content blocks (new articles) or legacy body (old articles) --}}
+            @if($blocks->isNotEmpty())
+                <div class="{{ $locale === 'ar' ? 'rtl' : '' }}">
+                    @foreach($blocks as $block)
+                        @if($block->type === 'text')
+                            <div class="news-text-block article-content {{ $locale === 'ar' ? 'rtl' : '' }}">
+                                {!! $block->content !!}
+                            </div>
+                        @elseif($block->type === 'image' && $block->image_path)
+                            <figure class="news-image-block">
+                                <a href="{{ Storage::url($block->image_path) }}"
+                                   data-lightbox="article-gallery"
+                                   data-title="{{ $block->{'caption_'.$locale} }}">
+                                    <img src="{{ Storage::url($block->image_path) }}"
+                                         alt="{{ $block->{'caption_'.$locale} }}">
+                                </a>
+                                @if($block->{'caption_'.$locale})
+                                    <figcaption>{{ $block->{'caption_'.$locale} }}</figcaption>
+                                @endif
+                            </figure>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                {{-- Legacy fallback for articles without blocks --}}
+                <div class="prose prose-lg max-w-none prose-headings:font-display prose-headings:text-ssbc-green prose-a:text-ssbc-gold article-content {{ $locale === 'ar' ? 'rtl' : '' }}">
+                    {!! $post->content($locale) !!}
+                </div>
+            @endif
 
             @if($post->images->isNotEmpty())
                 <div class="mt-10">

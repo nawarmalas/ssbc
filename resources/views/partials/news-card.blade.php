@@ -1,4 +1,13 @@
-@php $locale = app()->getLocale(); @endphp
+@php
+    $locale = app()->getLocale();
+    $cardDate = $post->published_at
+        ? \App\Support\NewsDate::format(
+            $post->published_at->copy()->timezone(config('app.admin_timezone')),
+            $locale,
+            true
+          )
+        : null;
+@endphp
 <a href="{{ route('news.show', ['locale' => $locale, 'slug' => $post->slug]) }}"
    class="group block border border-ssbc-green/10 bg-white hover:border-ssbc-gold transition-colors">
 
@@ -14,9 +23,9 @@
 
     <div class="p-6">
         <div class="flex items-center gap-3 mb-3">
-            @if($post->published_at)
+            @if($cardDate)
                 <span class="inline-block bg-ssbc-gold/15 text-ssbc-gold text-xs px-2 py-1 font-semibold uppercase tracking-wider">
-                    {{ $post->published_at->copy()->timezone(config('app.admin_timezone'))->format('d M Y') }}
+                    {{ $cardDate }}
                 </span>
             @endif
             @if($post->category)

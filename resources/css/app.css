@@ -262,6 +262,30 @@
 .article-content.rtl ol { padding-left: 0; padding-right: 1.5rem; }
 .article-content.rtl blockquote { border-left: none; border-right: 4px solid #1a3a2a; }
 
+/* ── Content blocks (public article view) ──────────────────────────────── */
+.news-text-block { margin: 1.25rem 0; }
+.news-image-block {
+  margin: 1.75rem auto;
+  text-align: center;
+}
+.news-image-block img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: inline-block;
+}
+.news-image-block figcaption {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* ── Content blocks (admin drag cards) ─────────────────────────────────── */
+.block-card { user-select: none; }
+.block-card.sortable-ghost { opacity: 0.4; background: #f0fdf4; }
+
 /* ── TipTap Rich Text Editor ──────────────────────────────────────────── */
 .tt-wrap {
   border: 1px solid #d1d5db;

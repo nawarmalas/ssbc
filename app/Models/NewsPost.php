@@ -59,6 +59,11 @@ class NewsPost extends Model
         return $this->hasMany(NewsPostImage::class)->orderBy('sort_order');
     }
 
+    public function contentBlocks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NewsContentBlock::class, 'news_post_id')->orderBy('sort_order');
+    }
+
     public function featuredImageUrl(): ?string
     {
         return $this->featured_image ? Storage::disk('public')->url($this->featured_image) : null;

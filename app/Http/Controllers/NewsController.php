@@ -16,7 +16,7 @@ class NewsController extends Controller
 
     public function show(string $locale, string $slug)
     {
-        $post = NewsPost::published()->with('images')->where('slug', $slug)->first();
+        $post = NewsPost::published()->with('images', 'contentBlocks')->where('slug', $slug)->first();
 
         if (! $post) {
             throw new NotFoundHttpException;

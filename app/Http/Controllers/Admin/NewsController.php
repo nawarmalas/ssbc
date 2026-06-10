@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\NewsContentBlock;
 use App\Models\NewsPost;
 use App\Models\NewsPostImage;
 use Illuminate\Http\Request;
@@ -63,6 +64,7 @@ class NewsController extends Controller
         ]);
 
         $this->storeGalleryImages($request, $post, 0);
+        $this->saveContentBlocks($request, $post);
 
         \Illuminate\Support\Facades\Log::info('NewsController::store completed in ' . round((microtime(true) - $_perfStart) * 1000) . 'ms');
 
@@ -73,7 +75,7 @@ class NewsController extends Controller
     {
         $this->authorizeSubadminDraftAccess($news);
 
-        $news->load('images');
+        $news->load('images', 'contentBlocks');
 
         return view('admin.news.edit', ['post' => $news]);
     }
@@ -129,6 +131,7 @@ class NewsController extends Controller
         $news->published_at = $this->publishedAtFromRequest($request, $data['status']);
 
         $news->save();
+        $this->saveContentBlocks($request, $news, true);
 
         return redirect()->route('admin.news.index')->with('status', __('admin.news_updated'));
     }
@@ -155,21 +158,96 @@ class NewsController extends Controller
     protected function validatePost(Request $request): array
     {
         return $request->validate([
-            'title_en'          => ['required', 'string', 'max:255'],
-            'title_ar'          => ['required', 'string', 'max:255'],
-            'excerpt_en'        => ['nullable', 'string', 'max:1000'],
-            'excerpt_ar'        => ['nullable', 'string', 'max:1000'],
-            'content_en'        => ['nullable', 'string'],
-            'content_ar'        => ['nullable', 'string'],
-            'featured_image'    => ['nullable', 'image', 'max:8192'],
-            'gallery_images'    => ['nullable', 'array', 'max:10'],
-            'gallery_images.*'  => ['image', 'max:8192'],
-            'delete_image_ids'  => ['nullable', 'array'],
-            'delete_image_ids.*'=> ['integer'],
-            'category'          => ['nullable', 'string', 'max:255'],
-            'status'            => ['required', 'in:draft,published'],
-            'published_at'      => ['nullable', 'date'],
+            'title_en'              => ['required', 'string', 'max:255'],
+            'title_ar'              => ['required', 'string', 'max:255'],
+            'excerpt_en'            => ['nullable', 'string', 'max:1000'],
+            'excerpt_ar'            => ['nullable', 'string', 'max:1000'],
+            'content_en'            => ['nullable', 'string'],
+            'content_ar'            => ['nullable', 'string'],
+            'featured_image'        => ['nullable', 'image', 'max:8192'],
+            'gallery_images'        => ['nullable', 'array', 'max:10'],
+            'gallery_images.*'      => ['image', 'max:8192'],
+            'delete_image_ids'      => ['nullable', 'array'],
+            'delete_image_ids.*'    => ['integer'],
+            'category'              => ['nullable', 'string', 'max:255'],
+            'status'                => ['required', 'in:draft,published'],
+            'published_at'          => ['nullable', 'date'],
+            'blocks_en'             => ['nullable', 'array'],
+            'blocks_ar'             => ['nullable', 'array'],
+            'block_image_en'        => ['nullable', 'array'],
+            'block_image_en.*'      => ['nullable', 'image', 'max:8192'],
+            'block_image_ar'        => ['nullable', 'array'],
+            'block_image_ar.*'      => ['nullable', 'image', 'max:8192'],
         ]);
+    }
+
+    protected function saveContentBlocks(Request $request, NewsPost $post, bool $isUpdate = false): void
+    {
+        foreach (['en', 'ar'] as $locale) {
+            $submittedBlocks = $request->input("blocks_{$locale}", []);
+            $uploadedImages  = $request->file("block_image_{$locale}", []);
+            $submittedIds    = [];
+
+            foreach ($submittedBlocks as $slot => $blockData) {
+                $type      = $blockData['type'] ?? 'text';
+                $blockId   = ! empty($blockData['block_id']) ? (int) $blockData['block_id'] : null;
+                $sortOrder = (int) ($blockData['sort_order'] ?? $slot);
+
+                $attrs = [
+                    'news_post_id' => $post->id,
+                    'locale'       => $locale,
+                    'type'         => $type,
+                    'sort_order'   => $sortOrder,
+                    'caption_en'   => $blockData['caption_en'] ?? null,
+                    'caption_ar'   => $blockData['caption_ar'] ?? null,
+                ];
+
+                if ($type === 'text') {
+                    $attrs['content'] = $blockData['content'] ?? null;
+                }
+
+                $newFile = $uploadedImages[$slot] ?? null;
+
+                if ($type === 'image' && $newFile) {
+                    if ($blockId) {
+                        $old = NewsContentBlock::find($blockId);
+                        if ($old && $old->image_path) {
+                            Storage::disk('public')->delete($old->image_path);
+                        }
+                    }
+                    $attrs['image_path'] = $newFile->store("news/{$post->id}/blocks", 'public');
+                }
+
+                if ($blockId) {
+                    $block = NewsContentBlock::where('id', $blockId)
+                        ->where('news_post_id', $post->id)
+                        ->where('locale', $locale)
+                        ->first();
+                    if ($block) {
+                        $block->update($attrs);
+                        $submittedIds[] = $blockId;
+                        continue;
+                    }
+                }
+
+                $newBlock       = NewsContentBlock::create($attrs);
+                $submittedIds[] = $newBlock->id;
+            }
+
+            if ($isUpdate) {
+                $toDelete = NewsContentBlock::where('news_post_id', $post->id)
+                    ->where('locale', $locale)
+                    ->when(! empty($submittedIds), fn ($q) => $q->whereNotIn('id', $submittedIds))
+                    ->get();
+
+                foreach ($toDelete as $block) {
+                    if ($block->image_path) {
+                        Storage::disk('public')->delete($block->image_path);
+                    }
+                    $block->delete();
+                }
+            }
+        }
     }
 
     protected function storeGalleryImages(Request $request, NewsPost $post, int $startOrder): void
