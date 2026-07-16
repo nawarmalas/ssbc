@@ -9,13 +9,14 @@ use App\Models\FormSection;
 use App\Models\FormSubmission;
 use Mpdf\Mpdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SubmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = FormSubmission::with('formDefinition')->orderByDesc('submitted_at');
+        $query = FormSubmission::with('formDefinition');
 
         if ($request->filled('form_id')) {
             $query->where('form_id', $request->input('form_id'));
@@ -28,11 +29,40 @@ class SubmissionController extends Controller
             $query->whereDate('submitted_at', '<=', $request->input('to'));
         }
 
+        // Per-status counts for the filter pills: one grouped query sharing
+        // the form/date filters, taken before the status filter narrows it.
+        $statusCounts = (clone $query)
+            ->select('status', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        // Whitelisted status filter; unknown values mean "all".
+        $status = $request->input('status');
+        if (! in_array($status, FormSubmission::STATUSES, true)) {
+            $status = null;
+        }
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
+        // Whitelisted sort; unknown values fall back to the original
+        // newest-first default, so parameter-less links behave as before.
+        $sort = $request->input('sort');
+        if (! in_array($sort, ['newest', 'oldest', 'status', 'status_desc'], true)) {
+            $sort = 'newest';
+        }
+        match ($sort) {
+            'oldest'      => $query->orderBy('submitted_at'),
+            'status'      => $query->orderByRaw(FormSubmission::statusOrderSql())->orderByDesc('submitted_at'),
+            'status_desc' => $query->orderByRaw(FormSubmission::statusOrderSql().' DESC')->orderByDesc('submitted_at'),
+            default       => $query->orderByDesc('submitted_at'),
+        };
+
         $submissions = $query->paginate(30)->withQueryString();
 
         $forms = FormDefinition::orderBy('title_en')->get();
 
-        return view('admin.submissions.index', compact('submissions', 'forms'));
+        return view('admin.submissions.index', compact('submissions', 'forms', 'statusCounts', 'status', 'sort'));
     }
 
     public function show(FormSubmission $submission)

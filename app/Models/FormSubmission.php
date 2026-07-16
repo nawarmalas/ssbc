@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FormSubmission extends Model
 {
+    /**
+     * Workflow statuses in their meaningful review order. Used for the
+     * status filter whitelist and for ORDER BY CASE expressions — keep in
+     * sync with the enum in the form_submissions migration.
+     */
+    public const STATUSES = ['pending', 'under_review', 'approved', 'rejected'];
+
     protected $fillable = [
         'form_id', 'display_name', 'ip_address',
         'status', 'admin_notes', 'submitted_at',
@@ -18,6 +25,21 @@ class FormSubmission extends Model
         return [
             'submitted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * SQL CASE expression ranking statuses in workflow order
+     * (pending → under_review → approved → rejected). Built only from the
+     * STATUSES constant — no user input is ever interpolated.
+     */
+    public static function statusOrderSql(): string
+    {
+        $cases = '';
+        foreach (self::STATUSES as $rank => $status) {
+            $cases .= " WHEN '{$status}' THEN {$rank}";
+        }
+
+        return 'CASE status'.$cases.' END';
     }
 
     public function answers(): HasMany
