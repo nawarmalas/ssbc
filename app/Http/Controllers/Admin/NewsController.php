@@ -9,9 +9,13 @@ use App\Models\NewsPostImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class NewsController extends Controller
 {
+    protected const STAGING_DIR = 'news/_staging';
+
     public function index()
     {
         $posts = NewsPost::query()
@@ -40,6 +44,8 @@ class NewsController extends Controller
         $featured = null;
         if ($request->hasFile('featured_image')) {
             $featured = $request->file('featured_image')->store('news/'.$slug, 'public');
+        } elseif ($request->filled('featured_image_staged')) {
+            $featured = $this->claimStagedImage($request->input('featured_image_staged'), 'news/'.$slug);
         }
 
         if ($request->user()?->canPublishNews() === false) {
@@ -95,11 +101,17 @@ class NewsController extends Controller
             $news->slug = NewsPost::generateUniqueSlug($data['title_en'], $news->id);
         }
 
-        if ($request->hasFile('featured_image')) {
-            if ($news->featured_image) {
-                Storage::disk('public')->delete($news->featured_image);
+        if ($request->hasFile('featured_image') || $request->filled('featured_image_staged')) {
+            $newFeatured = $request->hasFile('featured_image')
+                ? $request->file('featured_image')->store('news/'.$news->slug, 'public')
+                : $this->claimStagedImage($request->input('featured_image_staged'), 'news/'.$news->slug);
+
+            if ($newFeatured) {
+                if ($news->featured_image) {
+                    Storage::disk('public')->delete($news->featured_image);
+                }
+                $news->featured_image = $newFeatured;
             }
-            $news->featured_image = $request->file('featured_image')->store('news/'.$news->slug, 'public');
         }
 
         // Delete gallery images the editor checked for removal
@@ -110,6 +122,15 @@ class NewsController extends Controller
                 Storage::disk('public')->delete($img->path);
                 $img->delete();
             }
+        }
+
+        // Cap the total gallery at 10 images (remaining + newly uploaded).
+        $incoming = count((array) $request->input('gallery_staged', []))
+            + count((array) $request->file('gallery_images', []));
+        if ($news->images()->count() + $incoming > 10) {
+            throw ValidationException::withMessages([
+                'gallery_staged' => __('A post can have at most 10 gallery images in total.'),
+            ]);
         }
 
         // Append any newly uploaded gallery images
@@ -164,20 +185,25 @@ class NewsController extends Controller
             'excerpt_ar'            => ['nullable', 'string', 'max:1000'],
             'content_en'            => ['nullable', 'string'],
             'content_ar'            => ['nullable', 'string'],
-            'featured_image'        => ['nullable', 'image', 'max:8192'],
+            'featured_image'        => ['nullable', 'image', 'max:16384'],
+            'featured_image_staged' => ['nullable', 'string', 'max:255'],
             'gallery_images'        => ['nullable', 'array', 'max:10'],
-            'gallery_images.*'      => ['image', 'max:8192'],
+            'gallery_images.*'      => ['image', 'max:16384'],
+            'gallery_staged'        => ['nullable', 'array', 'max:10'],
+            'gallery_staged.*'      => ['string', 'max:255'],
             'delete_image_ids'      => ['nullable', 'array'],
             'delete_image_ids.*'    => ['integer'],
             'category'              => ['nullable', 'string', 'max:255'],
             'status'                => ['required', 'in:draft,published'],
             'published_at'          => ['nullable', 'date'],
             'blocks_en'             => ['nullable', 'array'],
+            'blocks_en.*.staged_image' => ['nullable', 'string', 'max:255'],
             'blocks_ar'             => ['nullable', 'array'],
+            'blocks_ar.*.staged_image' => ['nullable', 'string', 'max:255'],
             'block_image_en'        => ['nullable', 'array'],
-            'block_image_en.*'      => ['nullable', 'image', 'max:8192'],
+            'block_image_en.*'      => ['nullable', 'image', 'max:16384'],
             'block_image_ar'        => ['nullable', 'array'],
-            'block_image_ar.*'      => ['nullable', 'image', 'max:8192'],
+            'block_image_ar.*'      => ['nullable', 'image', 'max:16384'],
         ]);
     }
 
@@ -208,14 +234,23 @@ class NewsController extends Controller
 
                 $newFile = $uploadedImages[$slot] ?? null;
 
-                if ($type === 'image' && $newFile) {
-                    if ($blockId) {
-                        $old = NewsContentBlock::find($blockId);
-                        if ($old && $old->image_path) {
-                            Storage::disk('public')->delete($old->image_path);
-                        }
+                if ($type === 'image') {
+                    $newPath = null;
+                    if ($newFile) {
+                        $newPath = $newFile->store("news/{$post->id}/blocks", 'public');
+                    } elseif (! empty($blockData['staged_image'])) {
+                        $newPath = $this->claimStagedImage($blockData['staged_image'], "news/{$post->id}/blocks");
                     }
-                    $attrs['image_path'] = $newFile->store("news/{$post->id}/blocks", 'public');
+
+                    if ($newPath) {
+                        if ($blockId) {
+                            $old = NewsContentBlock::find($blockId);
+                            if ($old && $old->image_path) {
+                                Storage::disk('public')->delete($old->image_path);
+                            }
+                        }
+                        $attrs['image_path'] = $newPath;
+                    }
                 }
 
                 if ($blockId) {
@@ -252,12 +287,9 @@ class NewsController extends Controller
 
     protected function storeGalleryImages(Request $request, NewsPost $post, int $startOrder): void
     {
-        if (! $request->hasFile('gallery_images')) {
-            return;
-        }
-
         $order = $startOrder;
-        foreach ($request->file('gallery_images') as $file) {
+
+        foreach ((array) $request->file('gallery_images', []) as $file) {
             $path = $file->store('news/'.$post->slug.'/gallery', 'public');
             NewsPostImage::create([
                 'news_post_id' => $post->id,
@@ -265,6 +297,77 @@ class NewsController extends Controller
                 'sort_order'   => $order++,
             ]);
         }
+
+        // Images already uploaded one-by-one via the async endpoint; the form
+        // only carries their staged paths, so claiming them here is instant.
+        foreach ((array) $request->input('gallery_staged', []) as $staged) {
+            $path = $this->claimStagedImage($staged, 'news/'.$post->slug.'/gallery');
+            if ($path) {
+                NewsPostImage::create([
+                    'news_post_id' => $post->id,
+                    'path'         => $path,
+                    'sort_order'   => $order++,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Accepts a single gallery/featured/block image, stores it in a staging
+     * area and returns its path. The news Save request then references these
+     * paths instead of carrying binary data, keeping every HTTP request to at
+     * most one image.
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:16384'],
+        ]);
+
+        $disk = Storage::disk('public');
+
+        // Opportunistically clear staged files that were never attached to a post.
+        foreach ($disk->files(self::STAGING_DIR) as $stale) {
+            if ($disk->lastModified($stale) < now()->subDay()->getTimestamp()) {
+                $disk->delete($stale);
+            }
+        }
+
+        $ext  = strtolower($request->file('image')->getClientOriginalExtension() ?: 'jpg');
+        $id   = (string) Str::uuid();
+        $path = $request->file('image')->storeAs(self::STAGING_DIR, $id.'.'.$ext, 'public');
+
+        if ($path === false) {
+            return response()->json(['message' => __('The image could not be stored. Please try again.')], 500);
+        }
+
+        return response()->json([
+            'id'   => $id,
+            'path' => $path,
+            'url'  => $disk->url($path),
+        ], 201);
+    }
+
+    /**
+     * Move a previously staged upload into its final directory. Returns the
+     * new path, or null when the value is not a valid staged path (protects
+     * against path traversal / arbitrary file moves).
+     */
+    protected function claimStagedImage(?string $staged, string $destDir): ?string
+    {
+        if (! $staged || ! preg_match('#^news/_staging/[0-9a-fA-F-]{36}\.(jpe?g|png|webp)$#', $staged)) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+        if (! $disk->exists($staged)) {
+            return null;
+        }
+
+        $newPath = rtrim($destDir, '/').'/'.basename($staged);
+        $disk->move($staged, $newPath);
+
+        return $newPath;
     }
 
     protected function publishedAtFromRequest(Request $request, string $status): ?Carbon

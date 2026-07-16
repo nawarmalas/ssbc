@@ -106,8 +106,15 @@
                 <img src="{{ $post->featuredImageUrl() }}" alt="" class="h-32 border border-gray-200">
             </div>
         @endif
-        <input id="featured_image" name="featured_image" type="file" accept="image/*" class="ssbc-admin-input bg-white">
-        <p class="text-xs text-ssbc-sage mt-1">Used as the article thumbnail on listing pages. Upload a new file to replace the current one.</p>
+        <input id="featured_image" type="file" accept="image/jpeg,image/png,image/webp" class="ssbc-admin-input bg-white"
+               data-async-single data-staged-target="featured_image_staged" data-status="featured-upload-status" data-preview="featured-upload-preview">
+        <input type="hidden" name="featured_image_staged" id="featured_image_staged" value="{{ old('featured_image_staged') }}">
+        @if(old('featured_image_staged'))
+            <p class="text-xs text-ssbc-green mt-1">A featured image you uploaded earlier is still attached and will be used on save.</p>
+        @endif
+        <div id="featured-upload-status" class="mt-2 hidden"></div>
+        <div id="featured-upload-preview" class="mt-2"></div>
+        <p class="text-xs text-ssbc-sage mt-1">Used as the article thumbnail on listing pages. Upload a new file to replace the current one. Max 16 MB — the image uploads in the background as soon as you pick it.</p>
     </div>
 
     {{-- Content Blocks --}}
@@ -115,24 +122,25 @@
         <label class="ssbc-admin-label">Content Blocks</label>
         <p class="text-xs text-ssbc-sage mb-4">Build the article body as ordered text and image blocks. EN and AR blocks are fully independent.</p>
 
-        <div class="flex border-b border-gray-200 mb-4">
-            <button type="button" id="cb-tab-en"
-                    class="px-4 py-2 text-sm font-medium border-b-2 border-ssbc-green text-ssbc-green -mb-px">English</button>
-            <button type="button" id="cb-tab-ar"
-                    class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-ssbc-green -mb-px">Arabic (عربي)</button>
-        </div>
-
-        <div id="cb-panel-en">
-            @include('admin.news._content_blocks', [
-                'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'en')->values() : collect(),
-                'locale' => 'en',
-            ])
-        </div>
-        <div id="cb-panel-ar" class="hidden">
-            @include('admin.news._content_blocks', [
-                'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'ar')->values() : collect(),
-                'locale' => 'ar',
-            ])
+        <div class="cb-columns">
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-ssbc-green border-b border-gray-200 pb-2 mb-4">English</h3>
+                <div id="cb-panel-en">
+                    @include('admin.news._content_blocks', [
+                        'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'en')->values() : collect(),
+                        'locale' => 'en',
+                    ])
+                </div>
+            </div>
+            <div class="min-w-0" dir="rtl" lang="ar">
+                <h3 class="text-sm font-semibold text-ssbc-green border-b border-gray-200 pb-2 mb-4 text-right">Arabic (عربي)</h3>
+                <div id="cb-panel-ar">
+                    @include('admin.news._content_blocks', [
+                        'blocks' => $isEdit ? $post->contentBlocks->where('locale', 'ar')->values() : collect(),
+                        'locale' => 'ar',
+                    ])
+                </div>
+            </div>
         </div>
     </div>
 
@@ -144,7 +152,7 @@
             <p class="text-xs text-ssbc-sage mb-3">Check images to remove them when you save.</p>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
                 @foreach($post->images as $img)
-                    <div class="relative border border-gray-200 bg-gray-50">
+                    <div class="relative border border-gray-200 bg-gray-50 existing-gallery-item">
                         <img src="{{ $img->url() }}" alt="" class="w-full h-24 object-cover">
                         <label class="flex items-center gap-1.5 px-2 py-1.5 bg-white/90 text-xs text-red-700 cursor-pointer hover:bg-red-50">
                             <input type="checkbox" name="delete_image_ids[]" value="{{ $img->id }}" class="accent-red-600">
@@ -155,9 +163,32 @@
             </div>
         @endif
 
-        <input id="gallery_images" name="gallery_images[]" type="file" accept="image/*" multiple
+        <input id="gallery_picker" type="file" accept="image/jpeg,image/png,image/webp" multiple
                class="ssbc-admin-input bg-white">
-        <p class="text-xs text-ssbc-sage mt-1">Select multiple files at once. Maximum 10 images, 8 MB each. These appear as a photo gallery below the article body.</p>
+        <p class="text-xs text-ssbc-sage mt-1">Select multiple files at once. Maximum 10 images, 16 MB each. Each photo is compressed and uploaded in the background — you can keep editing while they upload. These appear as a photo gallery below the article body.</p>
+
+        <div id="gallery-errors" class="mt-2 space-y-1"></div>
+
+        <div id="gallery-overall" class="mt-3 hidden">
+            <div class="flex items-center justify-between text-xs text-ssbc-sage mb-1">
+                <span>Uploading photos…</span>
+                <span id="gallery-overall-label">0%</span>
+            </div>
+            <div class="h-1.5 bg-gray-200 overflow-hidden">
+                <div id="gallery-overall-bar" class="h-full bg-ssbc-green transition-all" style="width:0%"></div>
+            </div>
+        </div>
+
+        <ul id="gallery-items" class="mt-3 space-y-2"></ul>
+
+        {{-- Keep already-uploaded photos attached when validation sends the form back --}}
+        @php $oldStaged = array_filter((array) old('gallery_staged', [])); @endphp
+        @if($oldStaged)
+            <p class="text-xs text-ssbc-green mt-2">{{ count($oldStaged) }} photo(s) you uploaded earlier are still attached and will be saved with the post.</p>
+            @foreach($oldStaged as $staged)
+                <input type="hidden" name="gallery_staged[]" value="{{ $staged }}">
+            @endforeach
+        @endif
     </div>
 
     <div class="flex items-center justify-between border-t border-gray-200 pt-6">
@@ -194,6 +225,12 @@
   .ck.ck-button.ck-on { background: #1a3a2a !important; color: #fff !important; }
   .ck.ck-button:hover:not(.ck-disabled) { background: #e5e7eb !important; }
   .ssbc-hidden-ta { display: none !important; }
+  /* EN/AR content blocks side by side; stack below 900px */
+  .cb-columns { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  @media (min-width: 900px) {
+    .cb-columns { grid-template-columns: 1fr 1fr; }
+    .cb-columns > div:first-child { padding-right: 1.5rem; border-right: 1px solid #e5e7eb; }
+  }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -318,7 +355,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function buildImageBlockHtml(locale, slot) {
     var p   = 'blocks_' + locale + '[' + slot + ']'
-    var img = 'block_image_' + locale + '[' + slot + ']'
     var pvId = 'block-img-preview-' + locale + '-' + slot
     return '<div class="block-card border border-gray-200 bg-gray-50 p-4" data-type="image" data-slot="' + slot + '">' +
       '<input type="hidden" name="' + p + '[block_id]" value="">' +
@@ -334,38 +370,19 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="space-y-3">' +
         '<div id="' + pvId + '" class="block-img-preview"></div>' +
         '<div><label class="text-xs text-ssbc-sage block mb-1">Upload image</label>' +
-          '<input type="file" name="' + img + '" accept="image/*" class="ssbc-admin-input bg-white block-img-input" data-preview="' + pvId + '">' +
+          '<input type="file" accept="image/jpeg,image/png,image/webp" class="ssbc-admin-input bg-white block-img-input" data-preview="' + pvId + '">' +
+          '<input type="hidden" name="' + p + '[staged_image]" class="block-staged-input" value="">' +
+          '<div class="block-img-status mt-1 hidden"></div>' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-3">' +
           '<div><label class="text-xs text-ssbc-sage block mb-1">Caption (English)</label>' +
-            '<input type="text" name="' + p + '[caption_en]" class="ssbc-admin-input text-sm"></div>' +
+            '<input type="text" name="' + p + '[caption_en]" class="ssbc-admin-input text-sm" dir="ltr"></div>' +
           '<div><label class="text-xs text-ssbc-sage block mb-1">Caption (Arabic)</label>' +
             '<input type="text" name="' + p + '[caption_ar]" class="ssbc-admin-input text-sm" dir="rtl"></div>' +
         '</div>' +
       '</div>' +
     '</div>'
   }
-
-  // Tab switching
-  document.getElementById('cb-tab-en').addEventListener('click', function() {
-    document.getElementById('cb-panel-en').classList.remove('hidden')
-    document.getElementById('cb-panel-ar').classList.add('hidden')
-    this.classList.add('border-b-2','border-ssbc-green','text-ssbc-green')
-    this.classList.remove('text-gray-500')
-    var tAr = document.getElementById('cb-tab-ar')
-    tAr.classList.remove('border-b-2','border-ssbc-green','text-ssbc-green')
-    tAr.classList.add('text-gray-500')
-  })
-  document.getElementById('cb-tab-ar').addEventListener('click', function() {
-    document.getElementById('cb-panel-ar').classList.remove('hidden')
-    document.getElementById('cb-panel-en').classList.add('hidden')
-    this.classList.add('border-b-2','border-ssbc-green','text-ssbc-green')
-    this.classList.remove('text-gray-500')
-    var tEn = document.getElementById('cb-tab-en')
-    tEn.classList.remove('border-b-2','border-ssbc-green','text-ssbc-green')
-    tEn.classList.add('text-gray-500')
-    ensureBlockEditors('ar')
-  })
 
   // Add block buttons (event delegation on each section)
   ;['en','ar'].forEach(function(locale) {
@@ -405,23 +422,344 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   })
 
-  // Image preview on file select (delegated)
-  document.getElementById('news-form').addEventListener('change', function(e) {
-    if (!e.target.classList.contains('block-img-input')) return
-    var file = e.target.files[0]
-    if (!file) return
-    var pvId = e.target.dataset.preview
-    var pv = document.getElementById(pvId)
-    if (!pv) return
-    var reader = new FileReader()
-    reader.onload = function(ev) {
-      pv.innerHTML = '<img src="' + ev.target.result + '" class="h-32 border border-gray-200 object-cover">'
+  // Init block editors for both locales (EN/AR columns are side by side now)
+  ensureBlockEditors('en')
+  ensureBlockEditors('ar')
+
+  // ── Async image uploads ───────────────────────────────────────────────
+  // Every image (featured, gallery, content-block) is compressed in the
+  // browser and uploaded in its own request via the staging endpoint, so the
+  // final Save POST carries only text fields and staged paths.
+  var form = document.getElementById('news-form')
+  var UPLOAD_URL = '{{ route('admin.news.upload-image') }}'
+  var CSRF = form.querySelector('input[name="_token"]').value
+  var MAX_BYTES = 16 * 1024 * 1024
+  var MAX_GALLERY = 10
+  var COMPRESS_MIN_BYTES = 500 * 1024
+  var MAX_EDGE = 1920
+  var QUALITY = 0.82
+
+  // Shared queue: at most 2 uploads in flight — the host is resource-limited
+  // shared hosting, so firing 10 parallel requests would recreate the 503s.
+  var queue = [], active = 0
+  function enqueue(run) { queue.push(run); pump() }
+  function pump() {
+    while (active < 2 && queue.length) {
+      active++
+      queue.shift()(function() { active--; pump() })
     }
-    reader.readAsDataURL(file)
+  }
+  function uploadsPending() { return active > 0 || queue.length > 0 }
+
+  window.addEventListener('beforeunload', function(e) {
+    if (uploadsPending()) { e.preventDefault(); e.returnValue = '' }
+  })
+  form.addEventListener('submit', function(e) {
+    if (uploadsPending()) {
+      e.preventDefault()
+      alert('Photos are still uploading. Please wait for them to finish before saving.')
+    }
   })
 
-  // Init EN block editors on load (EN tab is active by default)
-  ensureBlockEditors('en')
+  function fmtSize(bytes) {
+    if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB'
+  }
+  function isSupportedImage(file) { return /^image\/(jpeg|png|webp)$/.test(file.type) }
+
+  // Canvas-based compression: max 1920px on the longest edge, q≈0.82.
+  // Files under 500 KB are sent as-is; if compression doesn't shrink the
+  // file, the original is used. Original filename is kept either way.
+  function compressImage(file) {
+    if (file.size < COMPRESS_MIN_BYTES) return Promise.resolve(file)
+    return new Promise(function(resolve) {
+      var url = URL.createObjectURL(file)
+      var img = new Image()
+      img.onload = function() {
+        URL.revokeObjectURL(url)
+        try {
+          var scale = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight))
+          var canvas = document.createElement('canvas')
+          canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+          canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+          var type = file.type === 'image/png' ? 'image/png' : (file.type === 'image/webp' ? 'image/webp' : 'image/jpeg')
+          canvas.toBlob(function(blob) {
+            resolve(blob && blob.size < file.size ? blob : file)
+          }, type, QUALITY)
+        } catch (err) { resolve(file) }
+      }
+      img.onerror = function() { URL.revokeObjectURL(url); resolve(file) }
+      img.src = url
+    })
+  }
+
+  function xhrUpload(blob, filename, onProgress) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest()
+      xhr.open('POST', UPLOAD_URL)
+      xhr.setRequestHeader('X-CSRF-TOKEN', CSRF)
+      xhr.setRequestHeader('Accept', 'application/json')
+      xhr.responseType = 'json'
+      xhr.timeout = 120000
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = function(ev) { if (ev.lengthComputable) onProgress(ev.loaded / ev.total) }
+      }
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300 && xhr.response && xhr.response.path) {
+          resolve(xhr.response)
+        } else {
+          var r = xhr.response || {}
+          var msg = r.message || (r.errors && r.errors.image && r.errors.image[0]) || ('Upload failed (HTTP ' + xhr.status + ')')
+          reject({ status: xhr.status, message: msg })
+        }
+      }
+      xhr.onerror = function() { reject({ status: 0, message: 'Network error' }) }
+      xhr.ontimeout = function() { reject({ status: 0, message: 'Upload timed out' }) }
+      var fd = new FormData()
+      fd.append('image', blob, filename)
+      xhr.send(fd)
+    })
+  }
+
+  // Compress + upload with up to 2 automatic retries (1.5s / 3s backoff).
+  // The queue slot is held during backoff so the server never sees a burst.
+  function uploadWithRetry(file, handlers) {
+    var attempts = 0
+    enqueue(function(done) {
+      function attempt() {
+        attempts++
+        if (handlers.onStart) handlers.onStart(attempts)
+        compressImage(file).then(function(blob) {
+          return xhrUpload(blob, file.name, handlers.onProgress)
+        }).then(function(res) {
+          handlers.onSuccess(res); done()
+        }).catch(function(err) {
+          var retriable = !err.status || err.status >= 500 || err.status === 429
+          if (retriable && attempts <= 2) {
+            if (handlers.onRetryWait) handlers.onRetryWait(attempts)
+            setTimeout(attempt, attempts * 1500)
+          } else {
+            handlers.onFailure(err); done()
+          }
+        })
+      }
+      attempt()
+    })
+  }
+
+  // ── Gallery uploader ──────────────────────────────────────────────────
+  var galleryPicker = document.getElementById('gallery_picker')
+  var galleryItems = document.getElementById('gallery-items')
+  var galleryErrors = document.getElementById('gallery-errors')
+  var overallWrap = document.getElementById('gallery-overall')
+  var overallBar = document.getElementById('gallery-overall-bar')
+  var overallLabel = document.getElementById('gallery-overall-label')
+  var galleryProgress = {}
+  var seenFiles = {}
+
+  function showGalleryError(msg) {
+    var p = document.createElement('p')
+    p.className = 'text-xs text-red-600'
+    p.textContent = msg
+    galleryErrors.appendChild(p)
+  }
+
+  function galleryCount() {
+    var existing = document.querySelectorAll('.existing-gallery-item').length
+    var removed = document.querySelectorAll('input[name="delete_image_ids[]"]:checked').length
+    var current = galleryItems.querySelectorAll('li:not([data-state="failed"])').length
+    // Staged uploads restored after a validation error live outside the list
+    var restored = 0
+    document.querySelectorAll('input[name="gallery_staged[]"]').forEach(function(inp) {
+      if (!galleryItems.contains(inp)) restored++
+    })
+    return existing - removed + current + restored
+  }
+
+  function refreshOverall() {
+    var keys = Object.keys(galleryProgress)
+    if (!keys.length) { overallWrap.classList.add('hidden'); return }
+    overallWrap.classList.remove('hidden')
+    var sum = 0
+    keys.forEach(function(k) { sum += galleryProgress[k] })
+    var pct = Math.round((sum / keys.length) * 100)
+    overallBar.style.width = pct + '%'
+    overallLabel.textContent = pct + '%'
+    if (pct >= 100) {
+      setTimeout(function() {
+        if (!uploadsPending()) { galleryProgress = {}; overallWrap.classList.add('hidden') }
+      }, 800)
+    }
+  }
+
+  function addGalleryFile(file) {
+    var key = file.name + '|' + file.size
+    if (seenFiles[key]) { showGalleryError('"' + file.name + '" is already in the list — duplicate skipped.'); return }
+    if (!isSupportedImage(file)) { showGalleryError('"' + file.name + '" is not a JPEG, PNG or WebP image.'); return }
+    if (file.size > MAX_BYTES) { showGalleryError('"' + file.name + '" is ' + fmtSize(file.size) + ' — the maximum is 16 MB per image.'); return }
+    if (galleryCount() >= MAX_GALLERY) { showGalleryError('Maximum ' + MAX_GALLERY + ' gallery images per post — "' + file.name + '" was not added.'); return }
+    seenFiles[key] = true
+
+    var li = document.createElement('li')
+    li.className = 'border border-gray-200 bg-gray-50 p-3'
+    li.dataset.state = 'uploading'
+    li.innerHTML =
+      '<div class="flex items-center gap-3">' +
+        '<span class="gallery-thumb w-12 h-12 bg-gray-200 flex-shrink-0 overflow-hidden"></span>' +
+        '<div class="flex-1 min-w-0">' +
+          '<div class="flex items-center justify-between gap-2">' +
+            '<span class="text-xs font-medium text-gray-800 truncate">' + escHtml(file.name) + '</span>' +
+            '<span class="gallery-status text-xs text-ssbc-sage flex-shrink-0">Waiting…</span>' +
+          '</div>' +
+          '<div class="h-1 bg-gray-200 mt-1.5"><div class="gallery-bar h-full bg-ssbc-green" style="width:0%"></div></div>' +
+        '</div>' +
+        '<button type="button" class="gallery-retry text-xs text-ssbc-green underline flex-shrink-0 hidden">Retry</button>' +
+        '<button type="button" class="gallery-remove text-xs text-red-600 hover:text-red-800 flex-shrink-0 hidden">Remove</button>' +
+      '</div>'
+    galleryItems.appendChild(li)
+
+    var bar = li.querySelector('.gallery-bar')
+    var status = li.querySelector('.gallery-status')
+    var removeBtn = li.querySelector('.gallery-remove')
+    var retryBtn = li.querySelector('.gallery-retry')
+    var thumb = li.querySelector('.gallery-thumb')
+
+    var fr = new FileReader()
+    fr.onload = function(ev) { thumb.innerHTML = '<img src="' + ev.target.result + '" class="w-full h-full object-cover">' }
+    fr.readAsDataURL(file)
+
+    function start() {
+      li.dataset.state = 'uploading'
+      retryBtn.classList.add('hidden')
+      status.classList.remove('text-red-600')
+      galleryProgress[key] = 0
+      refreshOverall()
+      uploadWithRetry(file, {
+        onStart: function(n) { status.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Compressing…' },
+        onProgress: function(f) {
+          var pct = Math.round(f * 100)
+          bar.style.width = pct + '%'
+          status.textContent = 'Uploading… ' + pct + '%'
+          galleryProgress[key] = f
+          refreshOverall()
+        },
+        onRetryWait: function() { status.textContent = 'Failed — retrying automatically…' },
+        onSuccess: function(res) {
+          li.dataset.state = 'done'
+          bar.style.width = '100%'
+          status.textContent = 'Uploaded ✓'
+          status.classList.add('text-ssbc-green')
+          var hidden = document.createElement('input')
+          hidden.type = 'hidden'
+          hidden.name = 'gallery_staged[]'
+          hidden.value = res.path
+          li.appendChild(hidden)
+          removeBtn.classList.remove('hidden')
+          galleryProgress[key] = 1
+          refreshOverall()
+        },
+        onFailure: function(err) {
+          li.dataset.state = 'failed'
+          status.textContent = 'Failed: ' + err.message
+          status.classList.add('text-red-600')
+          retryBtn.classList.remove('hidden')
+          removeBtn.classList.remove('hidden')
+          delete galleryProgress[key]
+          refreshOverall()
+        }
+      })
+    }
+
+    retryBtn.addEventListener('click', start)
+    removeBtn.addEventListener('click', function() {
+      delete seenFiles[key]
+      delete galleryProgress[key]
+      li.remove()
+      refreshOverall()
+    })
+    start()
+  }
+
+  galleryPicker.addEventListener('change', function() {
+    galleryErrors.innerHTML = ''
+    Array.prototype.slice.call(galleryPicker.files).forEach(addGalleryFile)
+    galleryPicker.value = ''
+  })
+
+  // ── Single-image async upload (featured image + content-block images) ──
+  function runSingleUpload(file, hidden, statusEl, onSuccessExtra) {
+    statusEl.classList.remove('hidden')
+    if (!isSupportedImage(file)) {
+      statusEl.innerHTML = '<span class="text-xs text-red-600"></span>'
+      statusEl.firstChild.textContent = '"' + file.name + '" is not a JPEG, PNG or WebP image.'
+      return
+    }
+    if (file.size > MAX_BYTES) {
+      statusEl.innerHTML = '<span class="text-xs text-red-600"></span>'
+      statusEl.firstChild.textContent = '"' + file.name + '" is ' + fmtSize(file.size) + ' — the maximum is 16 MB.'
+      return
+    }
+    statusEl.innerHTML = '<span class="single-status text-xs text-ssbc-sage">Waiting…</span>' +
+      '<div class="h-1 bg-gray-200 mt-1"><div class="single-bar h-full bg-ssbc-green" style="width:0%"></div></div>'
+    var st = statusEl.querySelector('.single-status')
+    var bar = statusEl.querySelector('.single-bar')
+    hidden.value = ''
+    uploadWithRetry(file, {
+      onStart: function(n) { st.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Compressing…' },
+      onProgress: function(f) {
+        var pct = Math.round(f * 100)
+        bar.style.width = pct + '%'
+        st.textContent = 'Uploading ' + file.name + ' — ' + pct + '%'
+      },
+      onRetryWait: function() { st.textContent = 'Failed — retrying automatically…' },
+      onSuccess: function(res) {
+        bar.style.width = '100%'
+        st.textContent = file.name + ' uploaded ✓'
+        st.classList.add('text-ssbc-green')
+        hidden.value = res.path
+        if (onSuccessExtra) onSuccessExtra(res)
+      },
+      onFailure: function(err) {
+        st.textContent = 'Failed: ' + err.message + ' — choose the file again to retry.'
+        st.classList.add('text-red-600')
+      }
+    })
+  }
+
+  var featuredInput = document.getElementById('featured_image')
+  if (featuredInput) {
+    featuredInput.addEventListener('change', function() {
+      var file = featuredInput.files[0]
+      if (!file) return
+      runSingleUpload(file, document.getElementById('featured_image_staged'), document.getElementById('featured-upload-status'), function(res) {
+        document.getElementById('featured-upload-preview').innerHTML =
+          '<img src="' + escAttr(res.url) + '" class="h-32 border border-gray-200 object-cover">'
+      })
+    })
+  }
+
+  // Content-block images: preview immediately, upload in the background,
+  // store the staged path in the block's hidden input (delegated so it also
+  // covers blocks added dynamically).
+  form.addEventListener('change', function(e) {
+    if (!e.target.classList.contains('block-img-input')) return
+    var input = e.target
+    var file = input.files[0]
+    if (!file) return
+    var wrap = input.parentNode
+    var hidden = wrap.querySelector('.block-staged-input')
+    var statusEl = wrap.querySelector('.block-img-status')
+    var pv = document.getElementById(input.dataset.preview)
+    if (pv) {
+      var reader = new FileReader()
+      reader.onload = function(ev) {
+        pv.innerHTML = '<img src="' + ev.target.result + '" class="h-32 border border-gray-200 object-cover">'
+      }
+      reader.readAsDataURL(file)
+    }
+    runSingleUpload(file, hidden, statusEl)
+  })
 })
 </script>
 @endpush

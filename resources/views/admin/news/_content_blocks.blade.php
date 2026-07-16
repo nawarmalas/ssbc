@@ -43,16 +43,17 @@
                             {{ $block->image_path ? 'Replace image (leave empty to keep current)' : 'Upload image' }}
                         </label>
                         <input type="file"
-                               name="{{ $imgPrefix }}[{{ $i }}]"
-                               accept="image/*"
+                               accept="image/jpeg,image/png,image/webp"
                                class="ssbc-admin-input bg-white block-img-input"
                                data-preview="block-img-preview-{{ $locale }}-{{ $i }}">
+                        <input type="hidden" name="{{ $fPrefix }}[{{ $i }}][staged_image]" class="block-staged-input" value="">
+                        <div class="block-img-status mt-1 hidden"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-xs text-ssbc-sage block mb-1">Caption (English)</label>
                             <input type="text" name="{{ $fPrefix }}[{{ $i }}][caption_en]"
-                                   value="{{ $block->caption_en }}" class="ssbc-admin-input text-sm">
+                                   value="{{ $block->caption_en }}" class="ssbc-admin-input text-sm" dir="ltr">
                         </div>
                         <div>
                             <label class="text-xs text-ssbc-sage block mb-1">Caption (Arabic)</label>

@@ -86,6 +86,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->middleware('admin.role:admin')
             ->name('dashboard');
 
+        Route::post('news/upload-image', [AdminNewsController::class, 'uploadImage'])
+            ->middleware('admin.permission:news_write,news_publish')
+            ->name('news.upload-image');
+
         Route::resource('news', AdminNewsController::class)
             ->middleware('admin.permission:news_write,news_publish')
             ->except(['show']);
