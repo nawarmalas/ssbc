@@ -1,13 +1,55 @@
 {
+  "node_modules/@jsquash/webp/codec/enc/webp_enc.js": {
+    "file": "assets/webp_enc-CdFZBZwS.js",
+    "name": "webp_enc",
+    "src": "node_modules/@jsquash/webp/codec/enc/webp_enc.js",
+    "isDynamicEntry": true,
+    "assets": [
+      "assets/webp_enc-BpZvKflB.wasm"
+    ]
+  },
+  "node_modules/@jsquash/webp/codec/enc/webp_enc.wasm": {
+    "file": "assets/webp_enc-BpZvKflB.wasm",
+    "src": "node_modules/@jsquash/webp/codec/enc/webp_enc.wasm"
+  },
+  "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.js": {
+    "file": "assets/webp_enc_simd-85O5BCB4.js",
+    "name": "webp_enc_simd",
+    "src": "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.js",
+    "isDynamicEntry": true,
+    "assets": [
+      "assets/webp_enc_simd-CFvKQ_80.wasm"
+    ]
+  },
+  "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.wasm": {
+    "file": "assets/webp_enc_simd-CFvKQ_80.wasm",
+    "src": "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.wasm"
+  },
+  "node_modules/@jsquash/webp/encode.js": {
+    "file": "assets/encode-CrOH8Y_a.js",
+    "name": "encode",
+    "src": "node_modules/@jsquash/webp/encode.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.js",
+      "node_modules/@jsquash/webp/codec/enc/webp_enc.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-Hta_RzbO.css",
+    "file": "assets/app-DSyqoUhi.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CpOtDUtT.js",
+    "file": "assets/app-D9EAKp8a.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/@jsquash/webp/encode.js"
+    ]
   }
 }

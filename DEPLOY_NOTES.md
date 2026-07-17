@@ -121,61 +121,39 @@ release. After unzipping the build on the host, clear cached artifacts:
 4. New static files that MUST be deployed: `public/fonts/*.woff2`,
    `public/site.webmanifest`, `public/favicon-16x16.png`,
    `public/favicon-32x32.png`, `public/apple-touch-icon.png`,
-   `public/android-chrome-{192x192,512x512}.png`, and the rebuilt
-   `public/build/` directory (includes the WebP WASM assets
-   `webp_enc*.wasm`).
+   `public/android-chrome-{192x192,512x512}.png`, the updated
+   `public/.htaccess`, and the rebuilt `public/build/` directory (includes
+   the WebP WASM assets `webp_enc*.wasm`).
+   **`deploy/ssbc-build.zip` has been regenerated with ALL of the above** —
+   its contents map 1:1 onto `public/`: upload it, unzip, and copy the
+   contents of `ssbc-build/` into `public_html/` (or wherever `public/`
+   lives), overwriting `build/` entirely.
 
-## Server-level settings still needed on the host (cannot be set from the app)
+## Host settings — now shipped in `public/.htaccess` (2026-07-17)
 
-Lighthouse flags these two on every page; both are host config, not code:
+Text compression (mod_deflate), long-lived cache headers (mod_expires /
+mod_headers) and the `.wasm`/`.webp`/`.woff2` MIME types are all included in
+`public/.htaccess`, so on the Apache/LiteSpeed host they apply automatically
+once the release (or `deploy/ssbc-build.zip`) is unzipped — nothing to click
+in the panel.
 
-### 1. Text compression (gzip/brotli)
+**Fallback (only if scores/headers show it's not working):** some hosts
+disable `mod_deflate`/`mod_expires`. In that case enable "gzip/brotli
+compression" and "browser caching" in the hosting panel, or ask support. The
+`<IfModule>` guards mean a missing module never breaks the site — the
+setting is just silently skipped. Verify after deploy with:
 
-Compressing HTML/CSS/JS is worth ~65 KB on the CSS alone (77 KB → 12 KB).
+    curl -sI -H 'Accept-Encoding: gzip' https://<site>/build/assets/app-*.css | grep -iE 'content-encoding|cache-control'
 
-- **Apache / LiteSpeed shared hosting** — add to the site config or the
-  top-level `.htaccess` (NOT shipped in the repo because `public/.htaccess`
-  is overwritten by deploys; confirm the host panel has "gzip/brotli
-  compression" enabled, or add):
+Expected: `content-encoding: gzip` and `cache-control: public, max-age=31536000, immutable`.
 
-      <IfModule mod_deflate.c>
-          AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml font/woff2
-      </IfModule>
-
-- **nginx**:
+If the host is ever moved to **nginx** (no .htaccess support), use:
 
       gzip on;
       gzip_types text/html text/css application/javascript application/json image/svg+xml;
-      # woff2 and webp are already compressed — do not add them
-
-### 2. Long-lived cache headers for static assets
-
-Everything under `public/build/` is content-hashed (safe to cache forever);
-fonts and logos are stable.
-
-- **Apache**:
-
-      <IfModule mod_expires.c>
-          ExpiresActive On
-          ExpiresByType text/css "access plus 1 year"
-          ExpiresByType application/javascript "access plus 1 year"
-          ExpiresByType font/woff2 "access plus 1 year"
-          ExpiresByType image/webp "access plus 30 days"
-          ExpiresByType image/jpeg "access plus 30 days"
-          ExpiresByType image/png "access plus 30 days"
-      </IfModule>
-
-- **nginx**:
-
       location /build/  { expires 1y; add_header Cache-Control "public, immutable"; }
       location /fonts/  { expires 1y; add_header Cache-Control "public, immutable"; }
       location /storage/ { expires 30d; }
-
-## MIME type check
-
-Ensure the host serves `.webp` as `image/webp` and `.wasm` as
-`application/wasm` (default on any modern Apache/nginx; some very old shared
-hosts need `AddType application/wasm .wasm` in `.htaccess`).
 
 ## Lighthouse results (local, devtools throttling, 2026-07-17)
 
