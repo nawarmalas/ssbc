@@ -196,7 +196,7 @@
 
                 <form method="POST" action="{{ route('admin.settings.hero.update') }}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3">
                     @csrf
-                    <input type="file" name="hero_image" accept=".jpg,.jpeg,.png,.webp" required class="text-sm">
+                    <input type="file" name="hero_image" accept=".jpg,.jpeg,.png,.webp" required class="text-sm" data-webp-auto>
                     <button type="submit" class="ssbc-admin-btn-primary">Upload</button>
                 </form>
             </div>

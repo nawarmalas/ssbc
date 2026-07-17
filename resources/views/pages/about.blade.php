@@ -22,8 +22,9 @@
             <img
                 src="{{ asset('images/logos/logo-two-tone.png') }}"
                 alt="{{ __('common.site_name') }}"
+                width="720" height="347"
                 class="h-20 md:h-24 w-auto"
-                loading="lazy">
+                loading="lazy" decoding="async">
         </div>
         <div class="ssbc-rule"></div>
         <p class="ssbc-eyebrow mb-3">{{ $site->homeContent($locale, 'overview.eyebrow', __('home.overview.eyebrow')) }}</p>

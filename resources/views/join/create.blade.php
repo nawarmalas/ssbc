@@ -42,7 +42,8 @@
             <div class="flex flex-col items-center mb-8 text-center">
                 <img src="{{ asset('images/logos/logo-two-tone.png') }}"
                      alt="{{ __('common.site_name') }}"
-                     class="h-16 md:h-20 w-auto mb-4" loading="lazy">
+                     width="720" height="347"
+                     class="h-16 md:h-20 w-auto mb-4" loading="lazy" decoding="async">
                 <div class="w-20 h-px bg-ssbc-gold"></div>
             </div>
 

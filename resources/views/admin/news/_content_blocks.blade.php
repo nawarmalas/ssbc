@@ -35,7 +35,7 @@
                     <div id="block-img-preview-{{ $locale }}-{{ $i }}" class="block-img-preview">
                         @if($block->image_path)
                             <img src="{{ Storage::url($block->image_path) }}" alt=""
-                                 class="h-32 border border-gray-200 object-cover">
+                                 class="h-32 border border-gray-200 object-cover" loading="lazy" decoding="async">
                         @endif
                     </div>
                     <div>

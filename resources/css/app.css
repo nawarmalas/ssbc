@@ -1,4 +1,91 @@
-@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@600;700&family=Noto+Kufi+Arabic:wght@400;600&display=swap');
+/* Self-hosted web fonts (woff2 files from @fontsource, copied to
+   public/fonts at stable URLs so the layouts can preload them) — served
+   from our own origin instead of Google's CDN, no third-party dependency.
+   Only the latin + arabic subsets the site actually renders; unicode-range
+   keeps each page to the subset it needs. */
+@font-face {
+    font-family: 'El Messiri';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('/fonts/el-messiri-latin-600-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'El Messiri';
+    font-style: normal;
+    font-weight: 700;
+    font-display: optional;
+    src: url('/fonts/el-messiri-latin-700-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'El Messiri';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('/fonts/el-messiri-arabic-600-normal.woff2') format('woff2');
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+08A0-08FF, U+200C-200E, U+2010-2011, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+    font-family: 'El Messiri';
+    font-style: normal;
+    font-weight: 700;
+    font-display: optional;
+    src: url('/fonts/el-messiri-arabic-700-normal.woff2') format('woff2');
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+08A0-08FF, U+200C-200E, U+2010-2011, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+    font-family: 'Noto Kufi Arabic';
+    font-style: normal;
+    font-weight: 400;
+    font-display: optional;
+    src: url('/fonts/noto-kufi-arabic-latin-400-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Noto Kufi Arabic';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('/fonts/noto-kufi-arabic-latin-600-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Noto Kufi Arabic';
+    font-style: normal;
+    font-weight: 400;
+    font-display: optional;
+    src: url('/fonts/noto-kufi-arabic-arabic-400-normal.woff2') format('woff2');
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+08A0-08FF, U+200C-200E, U+2010-2011, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+    font-family: 'Noto Kufi Arabic';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('/fonts/noto-kufi-arabic-arabic-600-normal.woff2') format('woff2');
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+08A0-08FF, U+200C-200E, U+2010-2011, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+/* Metric-matched local fallbacks (values computed from the woff2 metrics
+   vs Arial with fontkit) so any late font swap causes minimal layout shift. */
+@font-face {
+    font-family: 'Noto Kufi Arabic Fallback';
+    src: local('Arial');
+    size-adjust: 121.88%;
+    ascent-override: 105.18%;
+    descent-override: 50.46%;
+    line-gap-override: 0%;
+}
+@font-face {
+    font-family: 'El Messiri Fallback';
+    src: local('Arial');
+    size-adjust: 114.41%;
+    ascent-override: 89.07%;
+    descent-override: 47.55%;
+    line-gap-override: 0%;
+}
 
 @tailwind base;
 @tailwind components;
@@ -47,6 +134,20 @@
 
     .ssbc-eyebrow {
         @apply text-xs uppercase tracking-[0.2em] text-ssbc-gold font-semibold;
+    }
+
+    /* On light backgrounds the brand gold fails WCAG AA contrast — swap
+       eyebrows and gold links to the deep variant there. Dark green
+       sections keep the original gold. */
+    .bg-white .ssbc-eyebrow,
+    .bg-ssbc-beige .ssbc-eyebrow,
+    .bg-ssbc-light .ssbc-eyebrow {
+        @apply text-ssbc-gold-deep;
+    }
+    .bg-white .ssbc-link-gold,
+    .bg-ssbc-beige .ssbc-link-gold,
+    .bg-ssbc-light .ssbc-link-gold {
+        @apply text-ssbc-gold-deep hover:text-ssbc-gold-deep/80;
     }
 
     .ssbc-btn {

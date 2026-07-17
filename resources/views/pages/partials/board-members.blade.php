@@ -23,7 +23,8 @@
                         @if($member->photoUrl())
                             <img src="{{ $member->photoUrl() }}"
                                  alt="{{ $member->name() }}"
-                                 class="w-full h-full object-cover object-top">
+                                 class="w-full h-full object-cover object-top"
+                                 loading="lazy" decoding="async">
                         @else
                             <div class="w-full h-full bg-ssbc-green/10 flex items-center justify-center">
                                 <svg class="w-16 h-16 text-ssbc-green/20" viewBox="0 0 24 24" fill="currentColor">
@@ -47,7 +48,7 @@
                     <div class="text-center px-3 py-3 border-t-2 border-ssbc-beige"
                          @click="open = !open">
                         <p class="font-display font-bold text-sm text-ssbc-dark">{{ $member->name() }}</p>
-                        <p class="text-xs text-ssbc-sage mt-1">{{ $member->role() }}</p>
+                        <p class="text-xs text-ssbc-sage-deep mt-1">{{ $member->role() }}</p>
                     </div>
 
                 </div>

@@ -14,14 +14,18 @@ export default {
             colors: {
                 'ssbc-green': '#153e35',
                 'ssbc-gold':  '#daa900',
+                // Darker variants: gold/sage only meet WCAG AA contrast on
+                // the dark green background — use these on white/beige.
+                'ssbc-gold-deep': '#7d6400',
+                'ssbc-sage-deep': '#4e6a5e',
                 'ssbc-sage':  '#90aba0',
                 'ssbc-beige': '#f0e6dc',
                 'ssbc-light': '#f4f5f7',
                 'ssbc-dark':  '#1a1a2e',
             },
             fontFamily: {
-                display: ['"El Messiri"', 'serif'],
-                body: ['"Noto Kufi Arabic"', 'sans-serif'],
+                display: ['"El Messiri"', '"El Messiri Fallback"', 'serif'],
+                body: ['"Noto Kufi Arabic"', '"Noto Kufi Arabic Fallback"', 'sans-serif'],
             },
             maxWidth: {
                 '6xl': '72rem',

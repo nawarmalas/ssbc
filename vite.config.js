@@ -8,4 +8,9 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    // Pre-bundling would break the emscripten import.meta.url wasm lookup
+    // in the dev server; the production build handles it natively.
+    optimizeDeps: {
+        exclude: ['@jsquash/webp'],
+    },
 });

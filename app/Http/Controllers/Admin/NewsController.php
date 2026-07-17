@@ -185,10 +185,10 @@ class NewsController extends Controller
             'excerpt_ar'            => ['nullable', 'string', 'max:1000'],
             'content_en'            => ['nullable', 'string'],
             'content_ar'            => ['nullable', 'string'],
-            'featured_image'        => ['nullable', 'image', 'max:16384'],
+            'featured_image'        => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:16384'],
             'featured_image_staged' => ['nullable', 'string', 'max:255'],
             'gallery_images'        => ['nullable', 'array', 'max:10'],
-            'gallery_images.*'      => ['image', 'max:16384'],
+            'gallery_images.*'      => ['image', 'mimes:jpeg,jpg,png,webp', 'max:16384'],
             'gallery_staged'        => ['nullable', 'array', 'max:10'],
             'gallery_staged.*'      => ['string', 'max:255'],
             'delete_image_ids'      => ['nullable', 'array'],
@@ -201,9 +201,9 @@ class NewsController extends Controller
             'blocks_ar'             => ['nullable', 'array'],
             'blocks_ar.*.staged_image' => ['nullable', 'string', 'max:255'],
             'block_image_en'        => ['nullable', 'array'],
-            'block_image_en.*'      => ['nullable', 'image', 'max:16384'],
+            'block_image_en.*'      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:16384'],
             'block_image_ar'        => ['nullable', 'array'],
-            'block_image_ar.*'      => ['nullable', 'image', 'max:16384'],
+            'block_image_ar.*'      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:16384'],
         ]);
     }
 

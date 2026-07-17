@@ -27,13 +27,13 @@
 <section class="bg-white">
     <div class="ssbc-container py-16">
         <article class="max-w-3xl mx-auto">
-            <div class="flex items-center gap-3 mb-4 text-sm text-ssbc-gold uppercase tracking-wider font-semibold">
+            <div class="flex items-center gap-3 mb-4 text-sm text-ssbc-gold-deep uppercase tracking-wider font-semibold">
                 @if($formattedDate)
                     <span>{{ $formattedDate }}</span>
                 @endif
                 @if($post->category)
-                    <span class="text-ssbc-sage">·</span>
-                    <span class="text-ssbc-sage">{{ $post->category }}</span>
+                    <span class="text-ssbc-sage-deep">·</span>
+                    <span class="text-ssbc-sage-deep">{{ $post->category }}</span>
                 @endif
             </div>
 
@@ -41,7 +41,10 @@
 
             @if($post->featuredImageUrl())
                 <div class="aspect-video bg-ssbc-beige mb-10 overflow-hidden">
-                    <img src="{{ $post->featuredImageUrl() }}" alt="" class="w-full h-full object-cover">
+                    {{-- LCP image: load eagerly at high priority --}}
+                    <img src="{{ $post->featuredImageUrl() }}" alt="{{ $post->title($locale) }}"
+                         class="w-full h-full object-cover"
+                         loading="eager" fetchpriority="high" decoding="async">
                 </div>
             @endif
 
@@ -58,8 +61,11 @@
                                 <a href="{{ Storage::url($block->image_path) }}"
                                    data-lightbox="article-gallery"
                                    data-title="{{ $block->{'caption_'.$locale} }}">
+                                    @php $dim = \App\Support\ImageDimensions::forPublic($block->image_path); @endphp
                                     <img src="{{ Storage::url($block->image_path) }}"
-                                         alt="{{ $block->{'caption_'.$locale} }}">
+                                         alt="{{ $block->{'caption_'.$locale} ?: $post->title($locale) }}"
+                                         @if($dim) width="{{ $dim[0] }}" height="{{ $dim[1] }}" @endif
+                                         loading="lazy" decoding="async">
                                 </a>
                                 @if($block->{'caption_'.$locale})
                                     <figcaption>{{ $block->{'caption_'.$locale} }}</figcaption>
@@ -81,7 +87,8 @@
                         @foreach($post->images as $img)
                             <a href="{{ $img->url() }}" target="_blank" rel="noopener"
                                class="block aspect-video overflow-hidden bg-ssbc-beige border border-ssbc-green/10 hover:border-ssbc-gold transition-colors">
-                                <img src="{{ $img->url() }}" alt="" class="w-full h-full object-cover">
+                                <img src="{{ $img->url() }}" alt="{{ $post->title($locale) }} — {{ __('news.gallery_photo') }} {{ $loop->iteration }}"
+                                     class="w-full h-full object-cover" loading="lazy" decoding="async">
                             </a>
                         @endforeach
                     </div>

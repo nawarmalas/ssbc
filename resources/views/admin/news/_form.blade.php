@@ -153,7 +153,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
                 @foreach($post->images as $img)
                     <div class="relative border border-gray-200 bg-gray-50 existing-gallery-item">
-                        <img src="{{ $img->url() }}" alt="" class="w-full h-24 object-cover">
+                        <img src="{{ $img->url() }}" alt="" class="w-full h-24 object-cover" loading="lazy" decoding="async">
                         <label class="flex items-center gap-1.5 px-2 py-1.5 bg-white/90 text-xs text-red-700 cursor-pointer hover:bg-red-50">
                             <input type="checkbox" name="delete_image_ids[]" value="{{ $img->id }}" class="accent-red-600">
                             Remove
@@ -165,7 +165,7 @@
 
         <input id="gallery_picker" type="file" accept="image/jpeg,image/png,image/webp" multiple
                class="ssbc-admin-input bg-white">
-        <p class="text-xs text-ssbc-sage mt-1">Select multiple files at once. Maximum 10 images, 16 MB each. Each photo is compressed and uploaded in the background — you can keep editing while they upload. These appear as a photo gallery below the article body.</p>
+        <p class="text-xs text-ssbc-sage mt-1">Select multiple files at once. Maximum 10 images, 16 MB each. Each photo is converted to WebP in your browser and uploaded in the background — you can keep editing while they upload. These appear as a photo gallery below the article body.</p>
 
         <div id="gallery-errors" class="mt-2 space-y-1"></div>
 
@@ -435,7 +435,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var CSRF = form.querySelector('input[name="_token"]').value
   var MAX_BYTES = 16 * 1024 * 1024
   var MAX_GALLERY = 10
-  var COMPRESS_MIN_BYTES = 500 * 1024
   var MAX_EDGE = 1920
   var QUALITY = 0.82
 
@@ -467,12 +466,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function isSupportedImage(file) { return /^image\/(jpeg|png|webp)$/.test(file.type) }
 
-  // Canvas-based compression: max 1920px on the longest edge, q≈0.82.
-  // Files under 500 KB are sent as-is; if compression doesn't shrink the
-  // file, the original is used. Original filename is kept either way.
-  function compressImage(file) {
-    if (file.size < COMPRESS_MIN_BYTES) return Promise.resolve(file)
+  // WebP conversion: max 1920px on the longest edge, quality ~80, encoded
+  // in the browser (Squoosh WASM codec with canvas fallback — see
+  // resources/js/webp.js). If conversion can't shrink the file, the smaller
+  // original is kept. Resolves { blob, filename, originalSize, size, converted }.
+  function convertImage(file) {
+    if (window.ssbcToWebp) return window.ssbcToWebp(file)
+    // Fallback if the bundled converter is missing (stale build): the old
+    // canvas pipeline, keeping the original format.
     return new Promise(function(resolve) {
+      var pass = { blob: file, filename: file.name, originalSize: file.size, size: file.size, converted: false }
       var url = URL.createObjectURL(file)
       var img = new Image()
       img.onload = function() {
@@ -485,11 +488,13 @@ document.addEventListener('DOMContentLoaded', function () {
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
           var type = file.type === 'image/png' ? 'image/png' : (file.type === 'image/webp' ? 'image/webp' : 'image/jpeg')
           canvas.toBlob(function(blob) {
-            resolve(blob && blob.size < file.size ? blob : file)
+            if (blob && blob.size < file.size) {
+              resolve({ blob: blob, filename: file.name, originalSize: file.size, size: blob.size, converted: true })
+            } else { resolve(pass) }
           }, type, QUALITY)
-        } catch (err) { resolve(file) }
+        } catch (err) { resolve(pass) }
       }
-      img.onerror = function() { URL.revokeObjectURL(url); resolve(file) }
+      img.onerror = function() { URL.revokeObjectURL(url); resolve(pass) }
       img.src = url
     })
   }
@@ -522,16 +527,24 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   }
 
-  // Compress + upload with up to 2 automatic retries (1.5s / 3s backoff).
+  // Convert to WebP + upload with up to 2 automatic retries (1.5s / 3s
+  // backoff). Conversion happens once — retries reuse the converted blob.
   // The queue slot is held during backoff so the server never sees a burst.
   function uploadWithRetry(file, handlers) {
     var attempts = 0
+    var convertedPromise = null
     enqueue(function(done) {
       function attempt() {
         attempts++
         if (handlers.onStart) handlers.onStart(attempts)
-        compressImage(file).then(function(blob) {
-          return xhrUpload(blob, file.name, handlers.onProgress)
+        if (!convertedPromise) {
+          convertedPromise = convertImage(file).then(function(result) {
+            if (handlers.onConverted) handlers.onConverted(result)
+            return result
+          })
+        }
+        convertedPromise.then(function(result) {
+          return xhrUpload(result.blob, result.filename, handlers.onProgress)
         }).then(function(res) {
           handlers.onSuccess(res); done()
         }).catch(function(err) {
@@ -635,12 +648,18 @@ document.addEventListener('DOMContentLoaded', function () {
       status.classList.remove('text-red-600')
       galleryProgress[key] = 0
       refreshOverall()
+      var sizeLabel = ''
       uploadWithRetry(file, {
-        onStart: function(n) { status.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Compressing…' },
+        onStart: function(n) { status.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Converting to WebP…' },
+        onConverted: function(result) {
+          sizeLabel = result.converted
+            ? fmtSize(result.originalSize) + ' → ' + fmtSize(result.size)
+            : fmtSize(result.size)
+        },
         onProgress: function(f) {
           var pct = Math.round(f * 100)
           bar.style.width = pct + '%'
-          status.textContent = 'Uploading… ' + pct + '%'
+          status.textContent = 'Uploading… ' + pct + '%' + (sizeLabel ? ' · ' + sizeLabel : '')
           galleryProgress[key] = f
           refreshOverall()
         },
@@ -648,7 +667,7 @@ document.addEventListener('DOMContentLoaded', function () {
         onSuccess: function(res) {
           li.dataset.state = 'done'
           bar.style.width = '100%'
-          status.textContent = 'Uploaded ✓'
+          status.textContent = 'Uploaded ✓' + (sizeLabel ? ' · ' + sizeLabel : '')
           status.classList.add('text-ssbc-green')
           var hidden = document.createElement('input')
           hidden.type = 'hidden'
@@ -705,17 +724,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var st = statusEl.querySelector('.single-status')
     var bar = statusEl.querySelector('.single-bar')
     hidden.value = ''
+    var sizeLabel = ''
     uploadWithRetry(file, {
-      onStart: function(n) { st.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Compressing…' },
+      onStart: function(n) { st.textContent = n > 1 ? 'Retrying (attempt ' + n + ')…' : 'Converting to WebP…' },
+      onConverted: function(result) {
+        sizeLabel = result.converted
+          ? fmtSize(result.originalSize) + ' → ' + fmtSize(result.size)
+          : fmtSize(result.size)
+      },
       onProgress: function(f) {
         var pct = Math.round(f * 100)
         bar.style.width = pct + '%'
-        st.textContent = 'Uploading ' + file.name + ' — ' + pct + '%'
+        st.textContent = 'Uploading ' + file.name + ' — ' + pct + '%' + (sizeLabel ? ' · ' + sizeLabel : '')
       },
       onRetryWait: function() { st.textContent = 'Failed — retrying automatically…' },
       onSuccess: function(res) {
         bar.style.width = '100%'
-        st.textContent = file.name + ' uploaded ✓'
+        st.textContent = file.name + ' uploaded ✓' + (sizeLabel ? ' · ' + sizeLabel : '')
         st.classList.add('text-ssbc-green')
         hidden.value = res.path
         if (onSuccessExtra) onSuccessExtra(res)

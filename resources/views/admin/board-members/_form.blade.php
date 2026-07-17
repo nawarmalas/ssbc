@@ -69,7 +69,7 @@
                     <p class="text-xs text-ssbc-sage mt-1">Upload a new file to replace</p>
                 </div>
             @endif
-            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="ssbc-admin-input bg-white">
+            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="ssbc-admin-input bg-white" data-webp-auto>
         </div>
         <div>
             <label class="ssbc-admin-label" for="sort_order">Display Order <span class="text-ssbc-sage font-normal">(0 = first)</span></label>

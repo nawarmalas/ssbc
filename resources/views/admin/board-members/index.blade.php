@@ -25,7 +25,7 @@
                     <tr class="ssbc-admin-row">
                         <td class="px-4 py-3">
                             @if($member->photoUrl())
-                                <img src="{{ $member->photoUrl() }}" alt="" class="h-10 w-10 rounded-full object-cover">
+                                <img src="{{ $member->photoUrl() }}" alt="" class="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async">
                             @else
                                 <div class="h-10 w-10 rounded-full bg-ssbc-green/10 flex items-center justify-center text-ssbc-sage text-xs">–</div>
                             @endif

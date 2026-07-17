@@ -10,8 +10,9 @@
                     <img
                         src="{{ asset('images/logos/logo-one-tone.png') }}"
                         alt="{{ __('common.site_name') }}"
+                        width="720" height="347"
                         class="h-24 md:h-32 w-auto"
-                        loading="lazy">
+                        loading="lazy" decoding="async">
                 </a>
                 <div class="w-full h-px bg-ssbc-gold/50 mb-4"></div>
                 <p class="text-sm text-ssbc-sage leading-relaxed">
@@ -20,7 +21,7 @@
             </div>
 
             <div>
-                <h3 class="ssbc-eyebrow mb-4">{{ __('footer.nav_heading') }}</h3>
+                <h2 class="ssbc-eyebrow mb-4">{{ __('footer.nav_heading') }}</h2>
                 <ul class="space-y-2 text-sm">
                     <li><a href="{{ route('home', ['locale' => $locale]) }}" class="text-white/80 hover:text-ssbc-gold">{{ __('nav.home') }}</a></li>
                     <li><a href="{{ route('about', ['locale' => $locale]) }}" class="text-white/80 hover:text-ssbc-gold">{{ __('nav.about') }}</a></li>
@@ -31,7 +32,7 @@
             </div>
 
             <div>
-                <h3 class="ssbc-eyebrow mb-4">{{ __('footer.contact_heading') }}</h3>
+                <h2 class="ssbc-eyebrow mb-4">{{ __('footer.contact_heading') }}</h2>
                 <ul class="space-y-3 text-sm text-white/80">
                     @foreach($siteSettings->emails() as $email)
                         <li><a href="mailto:{{ $email }}" class="hover:text-ssbc-gold">{{ $email }}</a></li>

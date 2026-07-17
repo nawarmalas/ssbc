@@ -39,16 +39,18 @@
                 <img
                     src="{{ asset('images/logos/logo-one-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-24 md:h-28 w-auto"
+                    width="720" height="347"
+                    class="h-24 md:h-28 w-auto object-contain"
                     x-show="!scrolled"
-                    loading="eager">
+                    loading="eager" decoding="async">
                 <img
                     src="{{ asset('images/logos/logo-two-tone.png') }}"
                     alt="{{ __('common.site_name') }}"
-                    class="h-24 md:h-28 w-auto"
+                    width="720" height="347"
+                    class="h-24 md:h-28 w-auto object-contain"
                     x-show="scrolled"
                     x-cloak
-                    loading="eager">
+                    loading="lazy" decoding="async">
             </a>
 
             {{-- Desktop Nav --}}

@@ -6,7 +6,7 @@ return [
         'headline' => 'Building Bridges Between Syrian & Saudi Business',
         'tagline' => 'شراكة لإعادة بناء الإنسان والسوق والاقتصاد',
         'body' => 'The Syrian Saudi Business Council is the formal bilateral institution convening the leading businesses, investors and institutions of both nations — channelling capital, expertise and trade into the next chapter of Syria\'s reconstruction and Saudi Arabia\'s regional vision.',
-        'cta_primary' => 'Learn More',
+        'cta_primary' => 'About the Council',
         'cta_secondary' => 'Contact the Council',
     ],
     'overview' => [

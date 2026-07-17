@@ -16,7 +16,7 @@
         @else
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($posts as $post)
-                    @include('partials.news-card', ['post' => $post])
+                    @include('partials.news-card', ['post' => $post, 'headingTag' => 'h2', 'eager' => $loop->first])
                 @endforeach
             </div>
 

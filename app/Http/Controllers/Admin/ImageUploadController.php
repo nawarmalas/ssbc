@@ -12,7 +12,7 @@ class ImageUploadController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'image' => ['required', 'file', 'image', 'max:5120'],
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
         ]);
 
         $ext  = $request->file('image')->getClientOriginalExtension() ?: 'jpg';

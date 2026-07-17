@@ -14,10 +14,12 @@
 
     {{-- Background photo --}}
     <div class="absolute inset-0 z-0">
+        {{-- LCP image: load eagerly at high priority --}}
         <img
             src="{{ $heroImage }}"
             alt=""
             class="w-full h-full object-cover object-center"
+            loading="eager" fetchpriority="high" decoding="async"
             aria-hidden="true">
         {{-- Dark green overlay keeps the brand colour and ensures text contrast --}}
         <div class="absolute inset-0 bg-ssbc-green/85"></div>
