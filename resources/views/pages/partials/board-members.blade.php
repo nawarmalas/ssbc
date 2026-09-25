@@ -10,7 +10,8 @@
             أعضاء مجلس الإدارة
         </h2>
 
-        <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+        <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[repeat(var(--board-cols),minmax(0,1fr))] gap-4"
+             style="--board-cols: {{ $boardMembers->count() }};">
             @foreach($boardMembers as $member)
                 <div class="group bg-white rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                      x-data="{ open: false }"

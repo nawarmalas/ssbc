@@ -38,6 +38,8 @@ return [
     'status_new' => 'New',
     'status_pending' => 'Pending',
     'status_under_review' => 'Under review',
+    'status_consultant' => 'Consultant',
+    'status_waiting_payment' => 'Waiting for payment',
     'status_reviewed' => 'Reviewed',
     'status_contacted' => 'Contacted',
     'status_approved' => 'Approved',

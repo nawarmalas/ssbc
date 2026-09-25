@@ -38,6 +38,8 @@ return [
     'status_new' => 'جديد',
     'status_pending' => 'قيد الانتظار',
     'status_under_review' => 'قيد المراجعة',
+    'status_consultant' => 'استشاري',
+    'status_waiting_payment' => 'بانتظار الدفع',
     'status_reviewed' => 'تمت المراجعة',
     'status_contacted' => 'تم التواصل',
     'status_approved' => 'مُعتمد',

@@ -79,7 +79,7 @@ class SubmissionController extends Controller
     public function update(Request $request, FormSubmission $submission)
     {
         $data = $request->validate([
-            'status'      => ['sometimes', 'in:pending,under_review,approved,rejected'],
+            'status'      => ['sometimes', 'in:'.implode(',', FormSubmission::STATUSES)],
             'admin_notes' => ['nullable', 'string', 'max:5000'],
         ]);
 

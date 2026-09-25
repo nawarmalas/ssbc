@@ -4,12 +4,9 @@
 @section('page_title', 'Submissions')
 
 @php
-    $statusLabels = [
-        'pending'      => 'Pending',
-        'under_review' => 'Under review',
-        'approved'     => 'Approved',
-        'rejected'     => 'Rejected',
-    ];
+    $statusLabels = collect(\App\Models\FormSubmission::STATUSES)
+        ->mapWithKeys(fn ($s) => [$s => __('admin.status_'.$s)])
+        ->all();
 @endphp
 
 @section('content')
@@ -104,7 +101,7 @@
                     <td class="px-4 py-3 text-ssbc-dark">{{ $sub->formDefinition?->title_en ?? $sub->form_id }}</td>
                     <td class="px-4 py-3 font-semibold text-ssbc-dark">{{ $sub->display_name ?? '-' }}</td>
                     <td class="px-4 py-3">
-                        <span class="ssbc-status-badge ssbc-status-{{ $sub->status }}">{{ ucfirst(str_replace('_', ' ', $sub->status)) }}</span>
+                        <span class="ssbc-status-badge ssbc-status-{{ $sub->status }}">{{ __('admin.status_'.$sub->status) }}</span>
                     </td>
                     <td class="px-4 py-3 text-right">
                         <a href="{{ route('admin.submissions.show', $sub) }}" class="text-xs uppercase tracking-wider text-ssbc-green hover:text-ssbc-gold">View</a>

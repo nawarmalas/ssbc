@@ -293,6 +293,14 @@
         @apply bg-blue-50 text-blue-600;
     }
 
+    .ssbc-status-consultant {
+        @apply bg-purple-50 text-purple-700;
+    }
+
+    .ssbc-status-waiting_payment {
+        @apply bg-orange-50 text-orange-700;
+    }
+
     /* Sidebar nav */
     .ssbc-nav-link {
         @apply flex items-center justify-between px-4 py-2.5 text-sm text-white/70 border-l-2 border-transparent hover:text-white hover:bg-white/5 transition-colors;

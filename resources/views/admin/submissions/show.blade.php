@@ -75,8 +75,8 @@
             @csrf @method('PATCH')
             <label class="ssbc-admin-label">Status</label>
             <select name="status" class="ssbc-admin-input mb-4">
-                @foreach(['pending','under_review','approved','rejected'] as $s)
-                    <option value="{{ $s }}" @selected($submission->status === $s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>
+                @foreach(\App\Models\FormSubmission::STATUSES as $s)
+                    <option value="{{ $s }}" @selected($submission->status === $s)>{{ __('admin.status_'.$s) }}</option>
                 @endforeach
             </select>
             <label class="ssbc-admin-label">Admin Notes</label>

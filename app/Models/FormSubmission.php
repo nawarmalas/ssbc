@@ -13,7 +13,7 @@ class FormSubmission extends Model
      * status filter whitelist and for ORDER BY CASE expressions — keep in
      * sync with the enum in the form_submissions migration.
      */
-    public const STATUSES = ['pending', 'under_review', 'approved', 'rejected'];
+    public const STATUSES = ['pending', 'under_review', 'consultant', 'waiting_payment', 'approved', 'rejected'];
 
     protected $fillable = [
         'form_id', 'display_name', 'ip_address',
@@ -29,7 +29,7 @@ class FormSubmission extends Model
 
     /**
      * SQL CASE expression ranking statuses in workflow order
-     * (pending → under_review → approved → rejected). Built only from the
+     * (pending → under_review → consultant → waiting_payment → approved → rejected). Built only from the
      * STATUSES constant — no user input is ever interpolated.
      */
     public static function statusOrderSql(): string
